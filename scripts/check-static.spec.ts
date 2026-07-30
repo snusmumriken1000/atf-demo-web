@@ -86,6 +86,17 @@ describe('check-static.mjs', () => {
 		expect(result.stderr).toContain('外部リソース参照');
 	});
 
+	it('プロトコル相対 URL の外部リソース参照も検出する', () => {
+		const result = runCheck({
+			...validBuild,
+			'index.html': page(
+				`${links('./showcase', './profile')}<script src="//cdn.example.com/a.js"></script>`
+			)
+		});
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('外部リソース参照');
+	});
+
 	it('外部サイトへのハイパーリンク(a href)は許容する', () => {
 		const result = runCheck({
 			...validBuild,

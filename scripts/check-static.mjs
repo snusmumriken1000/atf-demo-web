@@ -4,7 +4,8 @@
  * 検証内容:
  *   1. 3 ページ(index.html / showcase.html / profile.html)が存在すること
  *   2. 3 ページが内部リンクで相互に到達可能であること(リンクグラフ)
- *   3. <link> / <script src> / <img src> に外部 http(s) URL がないこと
+ *   3. <link> / <script src> / <img src> / <img srcset> に外部 URL
+ *      (http(s) およびプロトコル相対 //host/…)がないこと
  *      (外部サイトへのハイパーリンク <a href> は許可されるため除外)
  *
  * 本格的な検証(HTML パーサ・全アセット走査・Lighthouse 等)は #5 の担当。
@@ -42,8 +43,11 @@ if (errors.length === 0) {
 	// href を既知のルートに正規化する。プリレンダリング出力は相対パス
 	// (./showcase など)になるため、ページの出力ファイル位置を基準に解決する
 	const normalize = (href, file) => {
-		if (href.startsWith('#') || /^https?:/.test(href)) return null;
-		const url = new URL(href, new URL(file, 'https://local/'));
+		if (href.startsWith('#')) return null;
+		const base = new URL(file, 'https://local/');
+		const url = new URL(href, base);
+		// 絶対 URL・プロトコル相対 URL(//host/…)など外部オリジンは内部リンクとして扱わない
+		if (url.origin !== base.origin) return null;
 		const path =
 			url.pathname.length > 1 && url.pathname.endsWith('/')
 				? url.pathname.slice(0, -1)
@@ -82,10 +86,16 @@ if (errors.length === 0) {
 
 	// --- 3. 外部リソース参照の検出 ---------------------------------------
 
+	// プロトコル相対 URL(//host/…)も外部参照として検出する
 	const resourcePatterns = [
-		{ label: '<link>', regex: /<link\s[^>]*href="(https?:\/\/[^"]*)"/g },
-		{ label: '<script src>', regex: /<script\s[^>]*src="(https?:\/\/[^"]*)"/g },
-		{ label: '<img src>', regex: /<img\s[^>]*src="(https?:\/\/[^"]*)"/g }
+		{ label: '<link>', regex: /<link\s[^>]*href="((?:https?:)?\/\/[^"]*)"/g },
+		{ label: '<script src>', regex: /<script\s[^>]*src="((?:https?:)?\/\/[^"]*)"/g },
+		{ label: '<img src>', regex: /<img\s[^>]*src="((?:https?:)?\/\/[^"]*)"/g },
+		// srcset は「値の先頭」または「カンマ・空白の直後」から始まる URL 候補のみ拾う
+		{
+			label: '<img srcset>',
+			regex: /<img\s[^>]*srcset="(?:[^"]*[,\s])?((?:https?:)?\/\/[^\s,"]+)/g
+		}
 	];
 	for (const [route, source] of Object.entries(html)) {
 		for (const { label, regex } of resourcePatterns) {
