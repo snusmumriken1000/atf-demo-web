@@ -1,0 +1,41 @@
+/*
+ * デザイントークン(CSS カスタムプロパティ)。
+ *
+ * ここには :root のトークン定義のみを置く。コンポーネント固有のスタイルは
+ * 各 .svelte ファイルに書くこと。
+ *
+ * 面別の上書き規約(#3 / #4 の拡張点):
+ *   各面のルート要素に data-face 属性(entry / visual / profile)を付けているので、
+ *   面ごとの見た目は [data-face='visual'] { --color-bg: ...; } のように
+ *   属性セレクタでトークンを上書きして実現する。
+ */
+:root {
+	/* カラー */
+	--color-bg: #ffffff;
+	--color-fg: #1a1a1a;
+	--color-fg-muted: #5c5c5c;
+	--color-accent: #2563eb;
+
+	/* タイポグラフィ(サイズは 1rem 基準の 1.25 倍スケール) */
+	--text-sm: 0.8rem;
+	--text-base: 1rem;
+	--text-lg: 1.25rem;
+	--text-xl: 1.5625rem;
+	--text-2xl: 1.953rem;
+	--leading-tight: 1.25;
+	--leading-relaxed: 1.75;
+
+	/* スペーシング(4px 基数) */
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-5: 1.25rem;
+	--space-6: 1.5rem;
+	--space-7: 1.75rem;
+	--space-8: 2rem;
+
+	/* レイヤー・モーション */
+	--z-nav: 10;
+	--motion-duration: 150ms;
+}

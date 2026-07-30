@@ -1,0 +1,42 @@
+/*
+ * サイト全体の基礎スタイル。
+ *
+ * CSS フレームワークやリセットライブラリは導入せず、必要最小限のリセットと
+ * トークンの適用のみを行う(品質最優先・自己完結の方針)。
+ */
+@import './fonts.css';
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+ul,
+ol,
+figure,
+blockquote {
+	margin: 0;
+}
+
+img {
+	max-width: 100%;
+	display: block;
+}
+
+body {
+	background: var(--color-bg);
+	color: var(--color-fg);
+	font-family: var(--font-sans);
+	font-size: var(--text-base);
+	line-height: var(--leading-relaxed);
+}
