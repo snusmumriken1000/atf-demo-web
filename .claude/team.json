@@ -1,0 +1,83 @@
+{
+	"generatedBy": "agent-team-factory",
+	"preset": "web-dev",
+	"presetName": "Web アプリ開発チーム",
+	"project": "atf-demo-web",
+	"requirements": {
+		"phase": "greenfield",
+		"focus": ["quality", "security", "testing", "infra"],
+		"teamSize": "standard",
+		"issueDriven": true,
+		"githubRepo": "snusmumriken1000/atf-demo-web",
+		"prFlow": true,
+		"inception": {
+			"purpose": "自分のポートフォリオを他の人に見てもらいたい。",
+			"targetUsers": "自分以外の人。",
+			"coreValue": "100%カスタマイズ可能な自分のサイトがあること。",
+			"mustHave": ["サイト内に2つの面を作りたい。"],
+			"notList": [
+				"ッシュで",
+				"ずっと見ていたくなるようなページ。それでいて",
+				"ポートフォリオのことがなんとなく理解が可能なビジュアル特化の面。"
+			],
+			"successCriteria": "✔ プロジェクトの開発フェーズは? 新規開発(ゼロから立ち上げ)",
+			"risks": "す。",
+			"tradeoffPriority": "quality"
+		},
+		"techStack": {
+			"languages": ["typescript"],
+			"frameworks": ["svelte"]
+		},
+		"touchpoints": ["issue-approval", "pr-merge"]
+	},
+	"agents": [
+		{
+			"file": "architect.md",
+			"name": "architect",
+			"description": "機能追加や変更の実装方針を設計するアーキテクト。実装前の設計検討、影響範囲の調査、アーキテクチャ上のトレードオフ判断が必要なときに使う。"
+		},
+		{
+			"file": "implementer.md",
+			"name": "implementer",
+			"description": "設計方針に沿ってコードを実装する実装担当。機能追加・バグ修正・リファクタリングの実作業を任せるときに使う。"
+		},
+		{
+			"file": "test-engineer.md",
+			"name": "test-engineer",
+			"description": "テストの作成・実行・失敗解析を担当するテストエンジニア。変更の検証、テスト追加、フレーキーテストの調査に使う。"
+		},
+		{
+			"file": "code-reviewer.md",
+			"name": "code-reviewer",
+			"description": "変更差分をレビューするコードレビュアー。実装完了後の品質チェック、マージ前の確認に使う。"
+		},
+		{
+			"file": "doc-writer.md",
+			"name": "doc-writer",
+			"description": "README・API ドキュメント・変更履歴などのドキュメントを作成・更新するライター。ドキュメント整備が必要なときに使う。"
+		},
+		{
+			"file": "env-builder.md",
+			"name": "env-builder",
+			"description": "エージェントチームの実行環境(ハーネス・ガードレール・フィードバックループ)の設定とコンテキストファイルの整備を担当する環境ビルダー。チーム導入直後のセットアップや運用ルールの点検に使う。"
+		},
+		{
+			"file": "issue-manager.md",
+			"name": "issue-manager",
+			"description": "GitHub Issues の起票・整理・優先順位付け・クローズ判断を担当する Issue マネージャー。タスクの Issue 化と進捗管理に使う。"
+		},
+		{
+			"file": "orchestrator.md",
+			"name": "orchestrator",
+			"description": "チームのサブエージェントをまとめ上げ、タスクの計画から完了まで開発を推進するオーケストレーター。「開発を進めて」と依頼されたときの起点として使う。タッチポイントでは一時停止してユーザーの承認を仰ぐ。"
+		}
+	],
+	"flow": [
+		["architect", "implementer"],
+		["implementer", "test-engineer"],
+		["implementer", "code-reviewer"],
+		["implementer", "doc-writer"],
+		["issue-manager", "architect"],
+		["orchestrator", "issue-manager"]
+	]
+}

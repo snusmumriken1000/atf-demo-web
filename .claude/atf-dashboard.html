@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="ja">
+	<head>
+		<meta charset="utf-8" />
+		<title>atf-demo-web — エージェントチームダッシュボード</title>
+		<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+		<style>
+			body {
+				font-family: -apple-system, 'Hiragino Sans', sans-serif;
+				margin: 2rem auto;
+				max-width: 1100px;
+				padding: 0 1rem;
+				color: #1a1a2e;
+			}
+			h1 {
+				font-size: 1.5rem;
+			}
+			h2 {
+				font-size: 1.15rem;
+				margin-top: 2.5rem;
+				border-bottom: 2px solid #e0e0ef;
+				padding-bottom: 0.4rem;
+			}
+			.meta {
+				color: #666;
+				font-size: 0.9rem;
+			}
+			.meta span {
+				margin-right: 1.2rem;
+			}
+			.cards {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+				gap: 1rem;
+			}
+			.card {
+				border: 1px solid #e0e0ef;
+				border-radius: 8px;
+				padding: 1rem;
+				background: #fafaff;
+			}
+			.card h3 {
+				margin: 0 0 0.5rem;
+				font-size: 1rem;
+				color: #3b3b8f;
+			}
+			.card p {
+				margin: 0;
+				font-size: 0.85rem;
+				line-height: 1.6;
+			}
+			table {
+				border-collapse: collapse;
+				width: 100%;
+				font-size: 0.85rem;
+			}
+			th,
+			td {
+				border: 1px solid #e0e0ef;
+				padding: 0.5rem 0.7rem;
+				text-align: left;
+				vertical-align: top;
+			}
+			th {
+				background: #f0f0fa;
+			}
+			.empty {
+				color: #999;
+				text-align: center;
+			}
+			.note {
+				color: #888;
+				font-size: 0.8rem;
+			}
+			.note code {
+				background: #eeeefa;
+				border-radius: 3px;
+				padding: 0 0.3rem;
+			}
+			.badge {
+				background: #3b3b8f;
+				color: #fff;
+				border-radius: 4px;
+				padding: 0.1rem 0.5rem;
+				font-size: 0.8rem;
+			}
+			.mermaid {
+				background: #fafaff;
+				border: 1px solid #e0e0ef;
+				border-radius: 8px;
+				padding: 1rem;
+			}
+			.bar-row {
+				display: flex;
+				align-items: center;
+				gap: 0.6rem;
+				margin: 0.3rem 0;
+			}
+			.bar-label {
+				width: 160px;
+				font-size: 0.85rem;
+				text-align: right;
+			}
+			.bar {
+				height: 16px;
+				background: #6c6cd9;
+				border-radius: 3px;
+				min-width: 2px;
+			}
+			.bar-count {
+				font-size: 0.85rem;
+				color: #666;
+			}
+			.mechanisms {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+				gap: 1rem;
+			}
+			.mech {
+				border: 1px solid #e0e0ef;
+				border-top: 4px solid #999;
+				border-radius: 8px;
+				padding: 1rem;
+				background: #fafaff;
+			}
+			.mech-harness {
+				border-top-color: #3b3b8f;
+			}
+			.mech-guardrail {
+				border-top-color: #d98a2b;
+			}
+			.mech-feedback {
+				border-top-color: #2b9d5c;
+			}
+			.mech h3 {
+				margin: 0;
+				font-size: 1rem;
+			}
+			.mech-sub {
+				margin: 0.2rem 0 0.6rem;
+				font-size: 0.8rem;
+				color: #888;
+			}
+			.mech ul {
+				margin: 0;
+				padding-left: 1.2rem;
+			}
+			.mech li {
+				font-size: 0.85rem;
+				line-height: 1.6;
+				margin-bottom: 0.5rem;
+			}
+			.mech li.off {
+				color: #aaa;
+			}
+			.mech li.off b {
+				color: #aaa;
+			}
+			.off-label {
+				display: block;
+				font-size: 0.75rem;
+				color: #bbb;
+			}
+			.mech code {
+				background: #eeeefa;
+				border-radius: 3px;
+				padding: 0 0.3rem;
+				font-size: 0.8rem;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>atf-demo-web — Web アプリ開発チーム</h1>
+		<p class="meta">
+			<span>プリセット: web-dev</span>
+			<span>フェーズ: greenfield</span>
+			<span>重視観点: quality, security, testing, infra</span>
+			<span>開発スタイル: Issue 駆動</span>
+			<span>PR フロー: あり(マージ: ユーザー)</span>
+			<span>タッチポイント: Issue 着手前のユーザー承認 / PR マージはユーザーが実行</span>
+			<span>GitHub: snusmumriken1000/atf-demo-web</span>
+			<span>実行記録: 0 件</span>
+		</p>
+
+		<h2>実行環境の仕組み</h2>
+		<div class="mechanisms">
+			<div class="mech mech-harness">
+				<h3>🛠 ハーネス</h3>
+				<p class="mech-sub">エージェントを動かす骨組み</p>
+				<ul>
+					<li>
+						<b>エージェント定義</b> — <code>.claude/agents/</code> に 8 体。プリセット「Web
+						アプリ開発チーム」を atf-demo-web 向けにカスタマイズ
+					</li>
+					<li><b>入出力フロー</b> — エージェント間の受け渡し経路を 6 本定義(下の構成図に対応)</li>
+					<li>
+						<b>チームマニフェスト</b> —
+						<code>.claude/team.json</code> がチーム構成の単一情報源(再生成・可視化の入力)
+					</li>
+					<li>
+						<b>Issue 起点のタスク供給</b> — issue-manager が GitHub
+						Issue(snusmumriken1000/atf-demo-web) を起票・整理し、各エージェントへ振り分け
+					</li>
+					<li>
+						<b>PR ベースの変更フロー</b> — ブランチ作成 → push → <code>gh pr create</code> で変更を
+						Pull Request 化(Issue 番号を紐付け)
+					</li>
+				</ul>
+			</div>
+			<div class="mech mech-guardrail">
+				<h3>🚧 ガードレール</h3>
+				<p class="mech-sub">逸脱を防ぐ制約</p>
+				<ul>
+					<li>
+						<b>役割スコープの限定</b> —
+						各エージェントは定義された責務の範囲でのみ作業(構成は上のカード参照)
+					</li>
+					<li><b>チーム規模の上限</b> — 標準構成(最大 5 体)でエージェント数を制御</li>
+					<li>
+						<b>既存定義の保護</b> — 導入時に既存の
+						<code>.claude/agents/</code> を上書きしない(上書きは <code>--force</code> 必須)
+					</li>
+					<li>
+						<b>Issue 起点の着手制限</b> — 対応する Issue のない作業には着手せず、先に Issue
+						の起票を提案
+					</li>
+					<li>
+						<b>人間のタッチポイント</b> — Issue 着手前のユーザー承認 / PR マージはユーザーが実行
+					</li>
+					<li>
+						<b>マージの実行主体</b> — エージェントは PR 作成まで。マージはユーザーがレビューして実行
+					</li>
+				</ul>
+			</div>
+			<div class="mech mech-feedback">
+				<h3>🔄 フィードバックループ</h3>
+				<p class="mech-sub">結果を観測して改善につなげる仕組み</p>
+				<ul>
+					<li>
+						<b>実行記録の自己申告</b> — 全エージェントが作業完了時に
+						<code>.claude/atf-logs/runs.jsonl</code> へ 1 行追記(現在 0 件)
+					</li>
+					<li>
+						<b>失敗の可視化</b> — status: failure の記録を実行記録テーブルに ❌ 表示(現在 0 件)
+					</li>
+					<li>
+						<b>ダッシュボード再生成</b> —
+						<code>atf report</code> で最新の実行記録を反映した本ページを再生成
+					</li>
+					<li>
+						<b>Issue へのトレース</b> — 実行記録・コミットメッセージに Issue 番号を残し、進捗を
+						Issue 上で追跡
+					</li>
+					<li>
+						<b>PR へのトレース</b> — 実行記録の outputs に PR の URL を残し、変更を PR
+						単位でレビュー・追跡
+					</li>
+				</ul>
+			</div>
+		</div>
+
+		<h2>チーム構成・入出力フロー</h2>
+		<pre class="mermaid">
+flowchart LR
+  architect["architect"]
+  implementer["implementer"]
+  test-engineer["test-engineer"]
+  code-reviewer["code-reviewer"]
+  doc-writer["doc-writer"]
+  env-builder["env-builder"]
+  issue-manager["issue-manager"]
+  orchestrator["orchestrator"]
+  architect --> implementer
+  implementer --> test-engineer
+  implementer --> code-reviewer
+  implementer --> doc-writer
+  issue-manager --> architect
+  orchestrator --> issue-manager
+</pre>
+
+		<h2>エージェント</h2>
+		<div class="cards">
+			<div class="card">
+				<h3>architect</h3>
+				<p>
+					機能追加や変更の実装方針を設計するアーキテクト。実装前の設計検討、影響範囲の調査、アーキテクチャ上のトレードオフ判断が必要なときに使う。
+				</p>
+			</div>
+
+			<div class="card">
+				<h3>implementer</h3>
+				<p>
+					設計方針に沿ってコードを実装する実装担当。機能追加・バグ修正・リファクタリングの実作業を任せるときに使う。
+				</p>
+			</div>
+
+			<div class="card">
+				<h3>test-engineer</h3>
+				<p>
+					テストの作成・実行・失敗解析を担当するテストエンジニア。変更の検証、テスト追加、フレーキーテストの調査に使う。
+				</p>
+			</div>
+
+			<div class="card">
+				<h3>code-reviewer</h3>
+				<p>
+					変更差分をレビューするコードレビュアー。実装完了後の品質チェック、マージ前の確認に使う。
+				</p>
+			</div>
+
+			<div class="card">
+				<h3>doc-writer</h3>
+				<p>
+					README・API
+					ドキュメント・変更履歴などのドキュメントを作成・更新するライター。ドキュメント整備が必要なときに使う。
+				</p>
+			</div>
+
+			<div class="card">
+				<h3>env-builder</h3>
+				<p>
+					エージェントチームの実行環境(ハーネス・ガードレール・フィードバックループ)の設定とコンテキストファイルの整備を担当する環境ビルダー。チーム導入直後のセットアップや運用ルールの点検に使う。
+				</p>
+			</div>
+
+			<div class="card">
+				<h3>issue-manager</h3>
+				<p>
+					GitHub Issues の起票・整理・優先順位付け・クローズ判断を担当する Issue
+					マネージャー。タスクの Issue 化と進捗管理に使う。
+				</p>
+			</div>
+
+			<div class="card">
+				<h3>orchestrator</h3>
+				<p>
+					チームのサブエージェントをまとめ上げ、タスクの計画から完了まで開発を推進するオーケストレーター。「開発を進めて」と依頼されたときの起点として使う。タッチポイントでは一時停止してユーザーの承認を仰ぐ。
+				</p>
+			</div>
+		</div>
+
+		<h2>タスク依存関係</h2>
+		<p class="note">
+			タスクドラフトはまだありません(issue-manager が
+			<code>.claude/atf-issues/</code> に起案すると依存関係グラフが表示されます)。
+		</p>
+
+		<h2>エージェント別 実行回数</h2>
+
+		<div class="bar-row">
+			<span class="bar-label">architect</span>
+			<div class="bar" style="width: 0%"></div>
+			<span class="bar-count">0</span>
+		</div>
+
+		<div class="bar-row">
+			<span class="bar-label">implementer</span>
+			<div class="bar" style="width: 0%"></div>
+			<span class="bar-count">0</span>
+		</div>
+
+		<div class="bar-row">
+			<span class="bar-label">test-engineer</span>
+			<div class="bar" style="width: 0%"></div>
+			<span class="bar-count">0</span>
+		</div>
+
+		<div class="bar-row">
+			<span class="bar-label">code-reviewer</span>
+			<div class="bar" style="width: 0%"></div>
+			<span class="bar-count">0</span>
+		</div>
+
+		<div class="bar-row">
+			<span class="bar-label">doc-writer</span>
+			<div class="bar" style="width: 0%"></div>
+			<span class="bar-count">0</span>
+		</div>
+
+		<div class="bar-row">
+			<span class="bar-label">env-builder</span>
+			<div class="bar" style="width: 0%"></div>
+			<span class="bar-count">0</span>
+		</div>
+
+		<div class="bar-row">
+			<span class="bar-label">issue-manager</span>
+			<div class="bar" style="width: 0%"></div>
+			<span class="bar-count">0</span>
+		</div>
+
+		<div class="bar-row">
+			<span class="bar-label">orchestrator</span>
+			<div class="bar" style="width: 0%"></div>
+			<span class="bar-count">0</span>
+		</div>
+
+		<h2>実行記録</h2>
+		<table>
+			<thead>
+				<tr>
+					<th>完了時刻</th>
+					<th>エージェント</th>
+					<th>Issue</th>
+					<th>タスク</th>
+					<th>入力</th>
+					<th>出力</th>
+					<th>結果</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td colspan="7" class="empty">
+						実行記録はまだありません(各エージェントが作業完了時に .claude/atf-logs/runs.jsonl
+						へ追記します)
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<script>
+			mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+		</script>
+	</body>
+</html>

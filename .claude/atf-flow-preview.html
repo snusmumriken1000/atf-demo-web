@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ja">
+	<head>
+		<meta charset="utf-8" />
+		<title>atf-demo-web — 開発フロープレビュー</title>
+		<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+		<style>
+			body {
+				font-family: -apple-system, 'Hiragino Sans', sans-serif;
+				margin: 2rem auto;
+				max-width: 900px;
+				padding: 0 1rem;
+				color: #1a1a2e;
+			}
+			h1 {
+				font-size: 1.4rem;
+			}
+			h2 {
+				font-size: 1.1rem;
+				margin-top: 2rem;
+				border-bottom: 2px solid #e0e0ef;
+				padding-bottom: 0.4rem;
+			}
+			.meta {
+				color: #666;
+				font-size: 0.9rem;
+			}
+			.meta span {
+				margin-right: 1.2rem;
+			}
+			.mermaid {
+				background: #fafaff;
+				border: 1px solid #e0e0ef;
+				border-radius: 8px;
+				padding: 1rem;
+			}
+			table {
+				border-collapse: collapse;
+				width: 100%;
+				font-size: 0.9rem;
+			}
+			th,
+			td {
+				border: 1px solid #e0e0ef;
+				padding: 0.5rem 0.7rem;
+				text-align: left;
+				vertical-align: top;
+			}
+			th {
+				background: #f0f0fa;
+				width: 7rem;
+			}
+			ul {
+				line-height: 1.9;
+			}
+			code {
+				background: #eeeefa;
+				border-radius: 3px;
+				padding: 0 0.3rem;
+			}
+			.note {
+				color: #888;
+				font-size: 0.85rem;
+			}
+			.focus-raw {
+				color: #999;
+				font-size: 0.8rem;
+				margin-left: 0.4rem;
+			}
+			.next {
+				background: #fff3d6;
+				border: 1px solid #d98a2b;
+				border-radius: 8px;
+				padding: 0.8rem 1rem;
+				font-size: 0.9rem;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>atf-demo-web — 開発フロープレビュー</h1>
+		<p class="meta">
+			<span>プリセット: Web アプリ開発チーム</span>
+			<span>フェーズ: greenfield</span>
+			<span>開発スタイル: Issue 駆動</span>
+			<span>PR フロー: あり</span>
+			<span>GitHub: snusmumriken1000/atf-demo-web</span>
+		</p>
+
+		<h2>重視している観点</h2>
+		<ul>
+			<li><b>コード品質・レビュー</b><span class="focus-raw">(quality)</span></li>
+			<li><b>セキュリティ</b><span class="focus-raw">(security)</span></li>
+			<li><b>テスト・QA</b><span class="focus-raw">(testing)</span></li>
+			<li><b>インフラ・運用基盤</b><span class="focus-raw">(infra)</span></li>
+		</ul>
+
+		<h2>開発フロー(Issue・ブランチ・PR がどのように作成されるか)</h2>
+		<pre class="mermaid">
+flowchart LR
+  issue["Issue 起票<br/>(タッチポイント候補)"]
+  branch["ブランチ作成"]
+  impl["実装・テスト"]
+  pr["PR 作成"]
+  merge["マージ<br/>(タッチポイント候補)"]
+  issue --> branch
+  branch --> impl
+  impl --> pr
+  pr --> merge
+  classDef touch fill:#fff3d6,stroke:#d98a2b;
+  class issue,merge touch
+</pre>
+		<table>
+			<tbody>
+				<tr>
+					<th>Issue</th>
+					<td>
+						issue-manager が
+						<code>gh issue create -R snusmumriken1000/atf-demo-web</code>
+						で起票(タイトル・背景・完了条件を明記)。各エージェントは Issue 番号を確認してから着手
+					</td>
+				</tr>
+				<tr>
+					<th>ブランチ</th>
+					<td>
+						作業単位ごとに
+						<code>feature/issue-&lt;番号&gt;-&lt;要約&gt;</code>
+						形式で作成。デフォルトブランチでは直接作業しない
+					</td>
+				</tr>
+				<tr>
+					<th>PR</th>
+					<td>
+						ブランチを push 後、<code>gh pr create -R snusmumriken1000/atf-demo-web</code>
+						で作成。本文の <code>Closes #&lt;番号&gt;</code> で Issue に紐付け
+					</td>
+				</tr>
+				<tr>
+					<th>マージ</th>
+					<td>
+						<b>このあとのタッチポイント選択で決定</b>: ユーザーがレビューしてマージする /
+						エージェントが CI・レビュー通過を確認して <code>gh pr merge</code> まで実行する
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h2>チーム構成(予定)</h2>
+		<pre class="mermaid">
+flowchart LR
+  architect["architect"] --> implementer["implementer"]
+  implementer["implementer"] --> test-engineer["test-engineer"]
+  implementer["implementer"] --> code-reviewer["code-reviewer"]
+  implementer["implementer"] --> doc-writer["doc-writer"]
+</pre>
+
+		<h2>人間のタッチポイント候補</h2>
+		<ul>
+			<li>
+				<b>Issue 着手前</b> — エージェントが起票した Issue
+				をユーザーが確認・承認してから実装に着手する
+			</li>
+			<li>
+				<b>PR マージ</b> — エージェントは PR
+				作成まで。マージはユーザーがレビューして実行する(未選択ならエージェントがマージまで自動実行)
+			</li>
+		</ul>
+		<p class="next">
+			このプレビューを確認したら CLI
+			に戻ってください。人間のタッチポイントをどこに設けるかを続けて質問します。選択しない場合、エージェントがマージまで自動で進めます。
+		</p>
+
+		<script>
+			mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+		</script>
+	</body>
+</html>
