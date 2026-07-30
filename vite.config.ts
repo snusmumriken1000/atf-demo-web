@@ -15,6 +15,10 @@ export default defineConfig({
 	],
 	test: {
 		expect: { requireAssertions: true },
+		// NOTE: 現状は node 環境の unit テストのみ。`*.svelte.{test,spec}.ts` は
+		// どのプロジェクトにも属さず実行されない(黙ってスキップされる)点に注意。
+		// コンポーネントテスト用の browser/jsdom プロジェクトは面 1・面 2 の
+		// UI 実装 Issue で導入予定。
 		projects: [
 			{
 				extends: './vite.config.ts',

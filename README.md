@@ -21,7 +21,7 @@
 
 ## 開発
 
-Node.js 20 以上が必要。
+Node.js 20.19 以上(推奨 22.12+)が必要(Vite 8 の engines 要件。`.npmrc` の `engine-strict=true` により、範囲外の Node では `npm install` が失敗する)。
 
 ```sh
 npm install
