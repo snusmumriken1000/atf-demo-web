@@ -16,7 +16,9 @@ const NAVIGATION_TIMEOUT_MS = 10_000;
 const FONT_TIMEOUT_MS = 3_000;
 const ANIMATION_TIMEOUT_MS = 2_000;
 const QUIET_WINDOW_MS = 300;
+const MIN_OBSERVATION_MS = 1_000;
 const QUIET_TIMEOUT_MS = 3_000;
+const SELF_CHECK_DELAY_MS = 600;
 
 const MIME_TYPES = {
 	'.css': 'text/css; charset=utf-8',
@@ -43,14 +45,14 @@ export function classifyRequestUrl(requestUrl, allowedOrigin) {
 	return { allowed: false, reason: `許可外オリジンまたはスキーム (${url.origin})` };
 }
 
-function routeToFile(pathname) {
+export function routeToFile(pathname) {
 	if (pathname === '/') return '/index.html';
 	if (pathname === '/showcase' || pathname === '/showcase/') return '/showcase.html';
 	if (pathname === '/profile' || pathname === '/profile/') return '/profile.html';
 	return pathname;
 }
 
-function startStaticServer(buildDir) {
+export function startStaticServer(buildDir) {
 	const server = createServer((request, response) => {
 		try {
 			const pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://local').pathname);
@@ -97,9 +99,15 @@ function startStaticServer(buildDir) {
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 async function waitForQuiet(getLastRequestAt) {
+	const observationStartedAt = Date.now();
 	const deadline = Date.now() + QUIET_TIMEOUT_MS;
 	while (Date.now() < deadline) {
-		if (Date.now() - getLastRequestAt() >= QUIET_WINDOW_MS) return;
+		const now = Date.now();
+		if (
+			now - observationStartedAt >= MIN_OBSERVATION_MS &&
+			now - getLastRequestAt() >= QUIET_WINDOW_MS
+		)
+			return;
 		await delay(50);
 	}
 	throw new Error(`${QUIET_TIMEOUT_MS}ms 以内にネットワークが静止しませんでした`);
@@ -151,6 +159,15 @@ function observeRequests(page, route, origin, violations) {
 	return () => lastRequestAt;
 }
 
+export function throwIfViolations(violations) {
+	if (violations.length === 0) return;
+	const details = violations.map(
+		({ route, method, resourceType, url, reason }) =>
+			`  - ${route}: ${method} ${url} [${resourceType}] — ${reason}`
+	);
+	throw new Error(`許可外のネットワークリクエストを検出しました:\n${details.join('\n')}`);
+}
+
 async function verifyRoute(browser, origin, route, violations) {
 	const context = await browser.newContext();
 	let page;
@@ -179,10 +196,12 @@ async function verifyMonitorSelfCheck(browser, origin) {
 			route.abort('blockedbyclient')
 		);
 		await page.goto(origin, { waitUntil: 'domcontentloaded', timeout: NAVIGATION_TIMEOUT_MS });
-		await page.evaluate(() => {
-			const host = ['runtime-network-smoke', 'invalid'].join('.');
-			void fetch(`https://${host}/probe`).catch(() => {});
-		});
+		await page.evaluate((selfCheckDelay) => {
+			window.setTimeout(() => {
+				const host = ['runtime-network-smoke', 'invalid'].join('.');
+				void fetch(`https://${host}/probe`).catch(() => {});
+			}, selfCheckDelay);
+		}, SELF_CHECK_DELAY_MS);
 		await waitForQuiet(getLastRequestAt);
 
 		const detected = violations.some(
@@ -213,13 +232,7 @@ export async function runRuntimeNetworkCheck() {
 		}
 		await verifyMonitorSelfCheck(browser, started.origin);
 
-		if (violations.length > 0) {
-			const details = violations.map(
-				({ route, method, resourceType, url, reason }) =>
-					`  - ${route}: ${method} ${url} [${resourceType}] — ${reason}`
-			);
-			throw new Error(`許可外のネットワークリクエストを検出しました:\n${details.join('\n')}`);
-		}
+		throwIfViolations(violations);
 		console.log('check-runtime-network: OK(3 ルートの実行時通信は同一オリジン/data: のみ)');
 	} finally {
 		await browser?.close().catch(() => {});
