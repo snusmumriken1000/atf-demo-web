@@ -1,14 +1,31 @@
 <script lang="ts">
 	import '$lib/styles/global.css';
 	import favicon from '$lib/assets/favicon.svg';
+	// preload の href は Vite のハッシュ付き URL に追従させるため必ず import 経由にする
+	import fontUrl from '$lib/assets/fonts/space-grotesk-latin-var.woff2';
 	import FaceSwitcher from '$lib/components/FaceSwitcher.svelte';
+	import { onNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 
 	let { children } = $props();
+
+	// ページ間フェード(View Transitions API)。時間・イージングは global.css の
+	// ::view-transition-* が motion トークンを参照する。非対応ブラウザは即時遷移(段階的強化)。
+	onNavigate((navigation) => {
+		if (!document.startViewTransition) return;
+
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="preload" as="font" type="font/woff2" crossorigin="anonymous" href={fontUrl} />
 </svelte:head>
 
 <a class="skip-link" href="#main">本文へスキップ</a>

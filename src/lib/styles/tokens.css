@@ -4,17 +4,25 @@
  * ここには :root のトークン定義のみを置く。コンポーネント固有のスタイルは
  * 各 .svelte ファイルに書くこと。
  *
- * 面別の上書き規約(#3 / #4 の拡張点):
+ * 面別の上書き規約(#4 の拡張点):
  *   各面のルート要素に data-face 属性(entry / visual / profile)を付けているので、
- *   面ごとの見た目は [data-face='visual'] { --color-bg: ...; } のように
- *   属性セレクタでトークンを上書きして実現する。
+ *   面ごとの見た目は body:has([data-face='...']) でトークン一式を上書きして実現する。
+ *   セクション要素への上書きだと (a) オーバースクロール時に body の背景色が露出する、
+ *   (b) main の外にある FaceSwitcher / skip-link が旧トークンのままになる、の 2 点が
+ *   問題になるため、必ず body レベルで反転させること。
+ *
+ * モーション規約:
+ *   transition / animation の時間・delay は必ず motion トークン経由で指定する
+ *   (src/lib/motion-tokens.spec.ts の静的テストで強制)。reduced-motion 時は
+ *   global.css でトークンを 0ms に潰し、全演出を一括無効化する。
  */
 :root {
-	/* カラー */
+	/* カラー(ライト面 = profile の既定値) */
 	--color-bg: #ffffff;
 	--color-fg: #1a1a1a;
 	--color-fg-muted: #5c5c5c;
 	--color-accent: #2563eb;
+	--color-surface: #f4f5f7;
 
 	/* タイポグラフィ(サイズは 1rem 基準の 1.25 倍スケール) */
 	--text-sm: 0.8rem;
@@ -22,6 +30,8 @@
 	--text-lg: 1.25rem;
 	--text-xl: 1.5625rem;
 	--text-2xl: 1.953rem;
+	--text-3xl: 2.441rem;
+	--text-4xl: 3.052rem;
 	--leading-tight: 1.25;
 	--leading-relaxed: 1.75;
 
@@ -37,5 +47,25 @@
 
 	/* レイヤー・モーション */
 	--z-nav: 10;
+	/* ホバー等のマイクロインタラクション用 */
 	--motion-duration: 150ms;
+	/* 入場・出現フェード用 */
+	--motion-duration-fade: 400ms;
+	/* stagger(要素間の出現ずらし)の 1 段分 */
+	--motion-stagger: 80ms;
+	--motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * ダーク基調の面(入口 / と面 1 /showcase)。
+ * 入口は面 1 と同トーンにして「スタイリッシュ」の第一印象を一貫させる(#3 の確定判断)。
+ * 面 2(profile)はライトのまま。
+ */
+body:has([data-face='entry']),
+body:has([data-face='visual']) {
+	--color-bg: #0b0f1a;
+	--color-fg: #e8eaf0;
+	--color-fg-muted: #98a1b3;
+	--color-accent: #60a5fa;
+	--color-surface: #131a2b;
 }
