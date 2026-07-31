@@ -20,6 +20,7 @@
  * ※ 現在の内容はサンプルです。実際の文言に差し替えてください。
  */
 import type { SiteContent } from './content.types';
+import { validateContent } from './content.validation';
 
 export const content: SiteContent = {
 	// ---- サイト全体(タブの表示・入口ページ) ----
@@ -162,3 +163,5 @@ export const content: SiteContent = {
 		}
 	]
 };
+
+validateContent(content);

@@ -8,7 +8,8 @@
 /** 外部サイトへのリンク(GitHub・デモ等)。url は https:// から書く */
 export type WorkLink = {
 	label: string;
-	url: string;
+	/** 外部リンクだけを扱う。javascript: や http: は型検査で拒否する */
+	url: `https://${string}`;
 };
 
 /** 作品 1 件分(showcase のタイルと profile の詳細で共有) */

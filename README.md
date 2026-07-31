@@ -35,6 +35,11 @@
 URL を指定できる。フィールド構成そのものを変える場合だけ
 [`src/lib/data/content.types.ts`](src/lib/data/content.types.ts) も更新する。
 
+`npm run verify` は `https://` 以外の外部リンク、作品 ID の形式・重複、表示リストのキー重複も
+検出する。静的検査は外部リンク URL がクライアント JavaScript に複製されることを許容するため、
+その URL が JavaScript 内で通信に使われていないことまでは判別できない。この限界は Issue #11 の
+実行時ネットワーク監視で補完する。
+
 ## 開発
 
 Node.js 20.19 以上(推奨 22.12+)が必要(Vite 8 の engines 要件。`.npmrc` の `engine-strict=true` により、範囲外の Node では `npm install` が失敗する)。
