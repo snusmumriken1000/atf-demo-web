@@ -1,14 +1,24 @@
 /*
  * フォント定義。
  *
- * 外部フォント(CDN 等)は読み込まない方針のため、現状はシステムフォントスタックのみ。
- * #3 でセルフホストフォントを導入する場合は、この位置(変数定義より前)に
- * @font-face を追記し、下のスタックの先頭にフォント名を足すこと。
+ * 外部フォント(CDN 等)は読み込まない方針のため、欧文の見出し用フォント
+ * Space Grotesk(OFL 1.1、ライセンス文は同ディレクトリの OFL.txt)を
+ * セルフホストする。woff2 は latin サブセットの variable フォント 1 ファイルのみ。
+ * 和文本文はシステムフォントスタック(--font-sans)のまま変えない。
  */
+@font-face {
+	font-family: 'Space Grotesk';
+	src: url('../assets/fonts/space-grotesk-latin-var.woff2') format('woff2');
+	font-weight: 300 700;
+	font-display: swap;
+}
+
 :root {
 	--font-sans:
 		system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
 		'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'BIZ UDPGothic', Meiryo, sans-serif,
 		'Apple Color Emoji', 'Segoe UI Emoji';
 	--font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+	/* 見出し・ロゴ・ナビラベル(欧文)用。和文グリフは --font-sans にフォールバックする */
+	--font-display: 'Space Grotesk', var(--font-sans);
 }

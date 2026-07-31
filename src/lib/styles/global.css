@@ -40,3 +40,54 @@ body {
 	font-size: var(--text-base);
 	line-height: var(--leading-relaxed);
 }
+
+/* 見出しは欧文ディスプレイフォント(和文グリフはシステムフォントに落ちる) */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: var(--font-display);
+}
+
+/*
+ * ページ間フェード(View Transitions API)。
+ * +layout.svelte の onNavigate で有効化する。非対応ブラウザは即時遷移(段階的強化)。
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: var(--motion-duration-fade);
+	animation-timing-function: var(--motion-ease);
+}
+
+/*
+ * スクロール出現の状態クラス(src/lib/attachments/fadeInOnView.ts が付与・除去する)。
+ * 既定(クラスなし)は可視で、JS 実行後にだけ .fade-pending が付く。
+ * JS 無効環境でコンテンツが不可視にならないよう、ここに opacity: 0 の既定値を
+ * 書いてはならない。
+ */
+.fade-target {
+	transition:
+		opacity var(--motion-duration-fade) var(--motion-ease),
+		transform var(--motion-duration-fade) var(--motion-ease);
+}
+
+.fade-target.fade-pending {
+	opacity: 0;
+	transform: translateY(8px);
+}
+
+/*
+ * prefers-reduced-motion の一括無効化。
+ * 全アニメーション時間は motion トークン経由で指定する規約
+ * (src/lib/motion-tokens.spec.ts で強制)のため、ここを 0ms にすれば
+ * すべての演出が「最終状態の即時表示」になる。
+ */
+@media (prefers-reduced-motion: reduce) {
+	:root {
+		--motion-duration: 0ms;
+		--motion-duration-fade: 0ms;
+		--motion-stagger: 0ms;
+	}
+}
