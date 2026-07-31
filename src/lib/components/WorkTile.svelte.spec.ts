@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
-import type { Work } from '$lib/data/works';
+import type { Work } from '$lib/data/content.types';
 import WorkTile from './WorkTile.svelte';
 
-const work: Work = { title: 'Sample Work', blurb: '一行説明', hue: 200 };
+const work: Work = { id: 'sample-work', title: 'Sample Work', blurb: '一行説明', hue: 200 };
 
 describe('WorkTile', () => {
 	it('image 省略時は装飾扱いのプレースホルダビジュアルを出す', () => {
@@ -24,7 +24,7 @@ describe('WorkTile', () => {
 	});
 
 	it('href 指定時はタイル全体がリンクになり、省略時はリンクを出さない', () => {
-		const { unmount } = render(WorkTile, { work: { ...work, href: '/showcase' } });
+		const { unmount } = render(WorkTile, { work, href: '/showcase' });
 
 		const link = screen.getByRole('link');
 		expect(link).toHaveAttribute('href', '/showcase');

@@ -12,7 +12,8 @@
  *   (1) <a href> / <area href> の外部ハイパーリンク(仕様上許可されている)
  *   (2) 属性名 xmlns / xmlns:* の名前空間宣言(識別子であり通信しない)
  *   (3) ALLOWED_NAMESPACE_URIS に完全一致する XML 名前空間 URI と、
- *       JS の文字列リテラル文脈に限り ALLOWED_JS_URL_PREFIXES(前方一致・
+ *       JS の文字列リテラル文脈に限り、出力 HTML の外部ハイパーリンクと
+ *       完全一致する URL、または ALLOWED_JS_URL_PREFIXES(前方一致・
  *       根拠コメント必須)に載った URL
  *       ※ プレフィックス許容を HTML 属性や CSS に適用しないのは、
  *         <img src="https://svelte.dev/e/logo.png"> のようなすり抜けを
@@ -54,11 +55,15 @@ const pages = {
 const SCAN_EXTENSIONS = new Set(['.html', '.css', '.js', '.svg']);
 
 const errors = [];
+// Svelte が <a href> の値をクライアント JS にも含めるため、HTML で外部
+// ハイパーリンクと確認できた URL だけを同一ビルド内の JS でも許容する。
+const externalHyperlinks = new Set();
 
 // --- 共通ヘルパー -------------------------------------------------------
 
 // JS の文字列リテラル文脈でのみ適用する許容判定(HTML 属性・CSS では使わない)
-const isAllowedJsUrl = (url) => ALLOWED_JS_URL_PREFIXES.some((prefix) => url.startsWith(prefix));
+const isAllowedJsUrl = (url) =>
+	externalHyperlinks.has(url) || ALLOWED_JS_URL_PREFIXES.some((prefix) => url.startsWith(prefix));
 
 // <a href> / <area href> の外部ハイパーリンクだけは仕様上許可される
 const isHyperlink = (tagName, attrName) =>
@@ -171,6 +176,19 @@ function collectFiles(dir) {
 	return files;
 }
 
+// JS 走査より先に、仕様上許可された <a>/<area> の外部 href を収集する。
+function collectExternalHyperlinks(source) {
+	for (const tag of source.matchAll(/<(a|area)\b((?:"[^"]*"|'[^']*'|[^>])*)>/gi)) {
+		for (const attr of tag[2].matchAll(
+			/([^\s=/'"<>]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/g
+		)) {
+			if (attr[1].toLowerCase() !== 'href') continue;
+			const value = attr[2] ?? attr[3] ?? attr[4];
+			if (/^https?:\/\//i.test(value) || /^\/\//.test(value)) externalHyperlinks.add(value);
+		}
+	}
+}
+
 // --- 1. 存在確認 --------------------------------------------------------
 
 const html = {};
@@ -234,7 +252,13 @@ if (errors.length === 0) {
 // --- 3. 外部 URL 参照の検出(default-deny) -----------------------------
 
 if (existsSync(buildDir)) {
-	for (const path of collectFiles(buildDir)) {
+	const files = collectFiles(buildDir);
+	for (const path of files) {
+		if (extname(path).toLowerCase() === '.html') {
+			collectExternalHyperlinks(readFileSync(path, 'utf8'));
+		}
+	}
+	for (const path of files) {
 		const file = relative(buildDir, path);
 		const source = readFileSync(path, 'utf8');
 		const ext = extname(path).toLowerCase();

@@ -4,14 +4,20 @@
 	実画像が用意できたら image / imageAlt を渡すだけで <img> に置き換わる。
 -->
 <script lang="ts">
-	import type { Work } from '$lib/data/works';
+	import type { Work } from '$lib/data/content.types';
 
 	let {
 		work,
+		href,
 		image,
 		imageAlt = ''
 	}: {
 		work: Work;
+		/**
+		 * タイル全体のリンク先(任意)。指定するとタイル全体がリンクになる。
+		 * 内部パスは $app/paths の resolve() を通した値を渡すこと(外部 URL はそのまま)。
+		 */
+		href?: string;
 		/** 実画像のパス(import した URL)。省略時は hue から生成するグラデーション */
 		image?: string;
 		imageAlt?: string;
@@ -29,10 +35,10 @@
 {/snippet}
 
 <article class="tile">
-	{#if work.href}
-		<!-- href は「resolve() 済みの内部パス」または「外部 URL」を渡す契約(works.ts 参照) -->
+	{#if href}
+		<!-- href は「resolve() 済みの内部パス」または「外部 URL」を渡す契約(props のコメント参照) -->
 		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-		<a href={work.href}>{@render body()}</a>
+		<a {href}>{@render body()}</a>
 	{:else}
 		{@render body()}
 	{/if}

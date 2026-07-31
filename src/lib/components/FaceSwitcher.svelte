@@ -8,17 +8,18 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { content } from '$lib/data/content';
 
 	// もう一方の面へのリンク先を route.id から決める
 	const other = $derived(
 		page.route.id === '/showcase'
-			? { href: resolve('/profile'), label: 'Profile' }
-			: { href: resolve('/showcase'), label: 'Showcase' }
+			? { href: resolve('/profile'), label: content.site.faces.profile.label }
+			: { href: resolve('/showcase'), label: content.site.faces.showcase.label }
 	);
 </script>
 
-<nav class="face-switcher" aria-label="面の切り替え">
-	<a href={resolve('/')}>← Top</a>
+<nav class="face-switcher" aria-label={content.site.navigation.switcherLabel}>
+	<a href={resolve('/')}>← {content.site.navigation.top}</a>
 	<a href={other.href}>{other.label}</a>
 </nav>
 

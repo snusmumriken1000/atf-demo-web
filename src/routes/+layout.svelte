@@ -4,6 +4,7 @@
 	// preload の href は Vite のハッシュ付き URL に追従させるため必ず import 経由にする
 	import fontUrl from '$lib/assets/fonts/space-grotesk-latin-var.woff2';
 	import FaceSwitcher from '$lib/components/FaceSwitcher.svelte';
+	import { content } from '$lib/data/content';
 	import { onNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 
@@ -28,7 +29,7 @@
 	<link rel="preload" as="font" type="font/woff2" crossorigin="anonymous" href={fontUrl} />
 </svelte:head>
 
-<a class="skip-link" href="#main">本文へスキップ</a>
+<a class="skip-link" href="#main">{content.site.navigation.skipToContent}</a>
 
 <!-- 面ページのみ切り替え導線を出す(入口 / では非表示)。判定は route.id で行う -->
 {#if page.route.id !== '/'}

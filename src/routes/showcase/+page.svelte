@@ -3,36 +3,46 @@
 	自己紹介ステートメントを主役に、作品ビジュアルを添えるダーク・ミニマル構成。
 	入場フェードは CSS アニメーションのみ(prerender された HTML の paint 直後に開始)、
 	作品タイルのスクロール出現は fadeInOnView attachment。時間はすべて motion トークン経由。
-	名前・ステートメントの文言はプレースホルダ(オーナーが差し替える前提)。
+	表示文言はすべて src/lib/data/content.ts が単一ソース。
 -->
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import WorkTile from '$lib/components/WorkTile.svelte';
 	import { fadeInOnView } from '$lib/attachments/fadeInOnView';
-	import { works } from '$lib/data/works';
+	import { content } from '$lib/data/content';
+
+	const { site, hero } = content;
+	// タイルに出す作品: featured 指定があればそれ、なければ先頭から。最大 4 件
+	const featured = content.works.filter((work) => work.featured);
+	const tiles = (featured.length > 0 ? featured : content.works).slice(0, 4);
+	// ステートメントは \n の位置で改行して大見出しにする
+	const statementLines = hero.statement.split('\n');
 </script>
 
 <svelte:head>
-	<title>Showcase | atf-demo-web</title>
+	<title>{site.faces.showcase.label} | {site.title}</title>
 </svelte:head>
 
 <section class="showcase" data-face="visual">
 	<header class="hero">
-		<p class="eyebrow rise">atf-demo-web — Portfolio</p>
+		<p class="eyebrow rise">{hero.name}</p>
 		<h1 class="statement rise">
-			Quiet code,<br />
-			vivid work.
+			{#each statementLines as line, index (index)}
+				{#if index > 0}<br />{/if}{line}
+			{/each}
 		</h1>
-		<p class="lead rise">静かなコードで、鮮やかなものをつくる。その途中経過を並べた面です。</p>
+		<p class="lead rise">{site.faces.showcase.lead}</p>
 		<!-- 下の作品バンドへのスクロール示唆(装飾のみ) -->
-		<p class="hint rise" aria-hidden="true">Scroll ↓</p>
+		<p class="hint rise" aria-hidden="true">{site.navigation.scrollHint}</p>
 	</header>
 
-	<section class="works" aria-label="作品">
-		<h2 class="works-title">Works</h2>
+	<section class="works" aria-labelledby="showcase-works-heading">
+		<h2 class="works-title" id="showcase-works-heading">{hero.worksLabel}</h2>
 		<ul>
-			{#each works as work (work.title)}
+			{#each tiles as work (work.id)}
 				<li {@attach fadeInOnView()}>
-					<WorkTile {work} />
+					<!-- タイルから面 2 の該当作品詳細(/profile#work-{id})へ -->
+					<WorkTile {work} href={resolve('/profile') + '#work-' + work.id} />
 				</li>
 			{/each}
 		</ul>
