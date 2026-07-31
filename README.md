@@ -30,16 +30,16 @@ npm run dev        # 開発サーバー起動
 
 ## npm scripts
 
-| コマンド          | 内容                                                     |
-| ----------------- | -------------------------------------------------------- |
-| `npm run dev`     | 開発サーバーを起動する                                   |
-| `npm run build`   | 静的サイトを `build/` に出力する                         |
-| `npm run preview` | ビルド結果をローカルで確認する                           |
-| `npm run check`   | svelte-check による型チェック                            |
-| `npm run lint`    | Prettier のフォーマット確認 + ESLint                     |
-| `npm run format`  | Prettier で整形する                                      |
-| `npm run test`    | Vitest を 1 回実行する(`test:unit` はウォッチモード)     |
-| `npm run verify`  | lint / check / test / build をまとめて実行する(品質確認) |
+| コマンド          | 内容                                                                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`     | 開発サーバーを起動する                                                                                                                          |
+| `npm run build`   | 静的サイトを `build/` に出力する                                                                                                                |
+| `npm run preview` | ビルド結果をローカルで確認する                                                                                                                  |
+| `npm run check`   | svelte-check による型チェック                                                                                                                   |
+| `npm run lint`    | Prettier のフォーマット確認 + ESLint                                                                                                            |
+| `npm run format`  | Prettier で整形する                                                                                                                             |
+| `npm run test`    | Vitest を 1 回実行する(`test:unit` はウォッチモード)                                                                                            |
+| `npm run verify`  | lint / check / test / build に加え、ビルド成果物の静的検証(check-static: ページ存在・相互到達性・外部 URL 参照なし)をまとめて実行する(品質確認) |
 
 ## ディレクトリ
 
