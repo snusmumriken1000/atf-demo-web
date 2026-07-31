@@ -198,6 +198,16 @@ describe('check-static.mjs', () => {
 		expect(result.stderr).toContain('https://api.example.com/data');
 	});
 
+	it('HTML の外部ハイパーリンクと同じ URL がクライアント JS に含まれても許容する', () => {
+		const url = 'https://github.com/example/project';
+		const result = runCheck({
+			...validBuild,
+			'profile.html': page(links('#main', './', './showcase', url)),
+			'_app/immutable/chunks/profile.js': `const link = "${url}";`
+		});
+		expect(result.status).toBe(0);
+	});
+
 	it('JS の文字列途中に現れる絶対 URL も検出する', () => {
 		const result = runCheck({
 			...validBuild,

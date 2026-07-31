@@ -5,26 +5,29 @@
 -->
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { content } from '$lib/data/content';
+
+	const { site } = content;
 </script>
 
 <svelte:head>
-	<title>atf-demo-web</title>
+	<title>{site.title}</title>
 </svelte:head>
 
 <section class="entry" data-face="entry">
 	<header class="rise">
-		<h1>atf-demo-web</h1>
-		<p>2 つの面をもつポートフォリオサイト。見たい面を選んでください。</p>
+		<h1>{site.title}</h1>
+		<p>{site.entryLead}</p>
 	</header>
 
-	<nav aria-label="面の選択">
+	<nav aria-label={site.navigation.entryLabel}>
 		<a class="rise" href={resolve('/showcase')}>
-			<h2>Showcase</h2>
-			<p>ビジュアルで感じる面</p>
+			<h2>{site.faces.showcase.label}</h2>
+			<p>{site.faces.showcase.lead}</p>
 		</a>
 		<a class="rise" href={resolve('/profile')}>
-			<h2>Profile</h2>
-			<p>経歴・スキル・作品を読む面</p>
+			<h2>{site.faces.profile.label}</h2>
+			<p>{site.faces.profile.lead}</p>
 		</a>
 	</nav>
 </section>

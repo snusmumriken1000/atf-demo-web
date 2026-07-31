@@ -19,6 +19,22 @@
 - フォント・画像などの全アセットはリポジトリ内に同梱してバンドルする(フォントを追加するまではシステムフォントスタックを既定とする)
 - ただし、外部サイトへのハイパーリンク(`<a href>`)は許可する
 
+## コンテンツの差し替え
+
+サイトに表示する名前、紹介文、経歴、スキル、作品、リンク、各ページの案内文は
+[`src/lib/data/content.ts`](src/lib/data/content.ts) に集約している。この 1 ファイルを編集すれば、
+入口・Showcase・Profile の表示へ反映される。現在値はすべてサンプル。
+
+1. `hero` の名前とステートメントを差し替える
+2. `profile` の自己紹介・経歴・スキル・外部リンクを編集する
+3. `works` を作品単位で追加・削除し、Showcase に出す作品へ `featured: true` を付ける
+4. `npm run verify` で型、表示テスト、静的出力、外部リソース非依存を確認する
+
+項目ごとの説明と最小構成例は `content.ts` 内のコメントを参照する。画像を追加する場合は外部 URL
+から読み込まず `src/lib/assets/` または `static/` に同梱する。外部サイトへの作品リンクは `https://`
+URL を指定できる。フィールド構成そのものを変える場合だけ
+[`src/lib/data/content.types.ts`](src/lib/data/content.types.ts) も更新する。
+
 ## 開発
 
 Node.js 20.19 以上(推奨 22.12+)が必要(Vite 8 の engines 要件。`.npmrc` の `engine-strict=true` により、範囲外の Node では `npm install` が失敗する)。
@@ -44,6 +60,7 @@ npm run dev        # 開発サーバー起動
 ## ディレクトリ
 
 - `src/routes/` — ページ(ルーティング)
-- `src/lib/assets/fonts/` — 同梱フォントの置き場(現状は空)
-- `src/lib/styles/` — 共有スタイルの置き場(現状は空)
+- `src/lib/data/content.ts` — サイト全体の表示コンテンツ
+- `src/lib/assets/fonts/` — 同梱フォントの置き場
+- `src/lib/styles/` — 共有スタイル
 - `static/` — そのまま配信される静的ファイル

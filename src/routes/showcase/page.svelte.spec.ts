@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
-import { works } from '$lib/data/works';
+import { content } from '$lib/data/content';
 import Page from './+page.svelte';
 
 describe('showcase ページ(/showcase)', () => {
@@ -10,11 +10,16 @@ describe('showcase ページ(/showcase)', () => {
 		expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
 	});
 
-	it('works.ts の件数どおり作品タイルが出る', () => {
+	it('content.ts の featured 作品を最大 4 件表示し、Profile 詳細へリンクする', () => {
 		const { container } = render(Page);
 
 		const tiles = container.querySelectorAll('.works li');
-		expect(tiles).toHaveLength(works.length);
+		const featuredCount = content.works.filter((work) => work.featured).length;
+		expect(tiles).toHaveLength(Math.min(featuredCount || content.works.length, 4));
+		expect(screen.getByRole('link', { name: /Two-Faced Portfolio/ })).toHaveAttribute(
+			'href',
+			'/profile#work-two-faced-portfolio'
+		);
 	});
 
 	it('初期マークアップのタイルは hidden クラス(fade-pending)を持たない', () => {
