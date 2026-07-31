@@ -17,7 +17,8 @@
 		"format": "prettier --write .",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run",
-		"verify": "npm run lint && npm run check && npm run test && npm run build && node scripts/check-static.mjs"
+		"check:network": "node scripts/check-runtime-network.mjs",
+		"verify": "npm run lint && npm run check && npm run test && npm run build && node scripts/check-static.mjs && npm run check:network"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
@@ -32,6 +33,7 @@
 		"eslint-plugin-svelte": "^3.19.0",
 		"globals": "^17.6.0",
 		"jsdom": "^29.1.1",
+		"playwright": "^1.62.1",
 		"prettier": "^3.8.3",
 		"prettier-plugin-svelte": "^4.1.0",
 		"svelte": "^5.56.1",
