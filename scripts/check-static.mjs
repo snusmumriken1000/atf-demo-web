@@ -11,7 +11,12 @@
  * 許容するのは次の 3 つのみ:
  *   (1) <a href> / <area href> の外部ハイパーリンク(仕様上許可されている)
  *   (2) 属性名 xmlns / xmlns:* の名前空間宣言(識別子であり通信しない)
- *   (3) ALLOWED_URL_PREFIXES に載ったプレフィックス(根拠コメント必須)
+ *   (3) ALLOWED_NAMESPACE_URIS に完全一致する XML 名前空間 URI と、
+ *       JS の文字列リテラル文脈に限り ALLOWED_JS_URL_PREFIXES(前方一致・
+ *       根拠コメント必須)に載った URL
+ *       ※ プレフィックス許容を HTML 属性や CSS に適用しないのは、
+ *         <img src="https://svelte.dev/e/logo.png"> のようなすり抜けを
+ *         防ぐため(許容はコンテキストごとに分離する)
  */
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, relative, extname } from 'node:path';
@@ -19,16 +24,24 @@ import process from 'node:process';
 
 const buildDir = join(process.cwd(), 'build');
 
-// 通信を発生させないことが確認済みの URL プレフィックス。
+// JS の文字列リテラル文脈でのみ許容する URL プレフィックス。
 // 追加する場合は「なぜ通信しないか」のコメントを必ず添えること。
-const ALLOWED_URL_PREFIXES = [
+const ALLOWED_JS_URL_PREFIXES = [
 	// Svelte ランタイムのエラーメッセージに含まれるドキュメントへのリンク。
 	// console 出力用の文字列であり、fetch 等で読み込まれることはない
-	'https://svelte.dev/e/',
-	// XML 名前空間 URI(SVG / XHTML)。createElementNS 等の識別子として
-	// 使われるだけで、URL として通信することはない
-	'http://www.w3.org/'
+	'https://svelte.dev/e/'
 ];
+
+// 完全一致で許容する XML 名前空間 URI(全コンテキストに適用)。
+// createElementNS の引数や data: URI 内の xmlns など識別子として使われるだけで、
+// URL として通信することはない。前方一致にすると http://www.w3.org/Icons/… の
+// ような実在リソースまで通ってしまうため、完全一致に限定する
+const ALLOWED_NAMESPACE_URIS = new Set([
+	'http://www.w3.org/2000/svg',
+	'http://www.w3.org/1999/xhtml',
+	'http://www.w3.org/1999/xlink',
+	'http://www.w3.org/XML/1998/namespace'
+]);
 
 // ページ名 → 出力ファイルの対応(adapter-static のデフォルト出力)
 const pages = {
@@ -44,16 +57,17 @@ const errors = [];
 
 // --- 共通ヘルパー -------------------------------------------------------
 
-const isAllowedByPrefix = (url) => ALLOWED_URL_PREFIXES.some((prefix) => url.startsWith(prefix));
+// JS の文字列リテラル文脈でのみ適用する許容判定(HTML 属性・CSS では使わない)
+const isAllowedJsUrl = (url) => ALLOWED_JS_URL_PREFIXES.some((prefix) => url.startsWith(prefix));
 
 // <a href> / <area href> の外部ハイパーリンクだけは仕様上許可される
 const isHyperlink = (tagName, attrName) =>
 	(tagName === 'a' || tagName === 'area') && attrName === 'href';
 
 const reportUrl = (file, context, url) => {
-	if (!isAllowedByPrefix(url)) {
-		errors.push(`外部 URL 参照: ${file} の ${context} → ${url}`);
-	}
+	// 名前空間 URI(完全一致)はどのコンテキストでも通信しないため許容する
+	if (ALLOWED_NAMESPACE_URIS.has(url)) return;
+	errors.push(`外部 URL 参照: ${file} の ${context} → ${url}`);
 };
 
 // --- 走査ロジック(HTML / CSS / JS / SVG) ------------------------------
@@ -97,25 +111,28 @@ function scanCss(css, file, context) {
 //     文字列リテラル文脈(" ' ` の直後)の「ドットを含むホスト形」のみ検出する
 function scanJs(source, file, context) {
 	for (const match of source.matchAll(/https?:\/\/[^\s"'`<>\\)]+/gi)) {
-		reportUrl(file, context, match[0]);
+		if (!isAllowedJsUrl(match[0])) reportUrl(file, context, match[0]);
 	}
 	const literalRelative = /["'`](\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s"'`\\]*)/gi;
 	for (const match of source.matchAll(literalRelative)) {
-		reportUrl(file, context, match[1]);
+		if (!isAllowedJsUrl(match[1])) reportUrl(file, context, match[1]);
 	}
 }
 
-// HTML / SVG のマークアップを走査する。<style> の中身は CSS、インライン
-// <script> の中身は JS として検査し、残りは全タグの全属性を検査する
+// HTML / SVG のマークアップを走査する。インライン <script> の中身は JS、
+// <style> の中身は CSS として検査し、残りは全タグの全属性を検査する。
+// JS 文字列に "<style>"…"</style>" が含まれても script 本文が欠けないよう、
+// <script> の抽出を <style> より先に行う(インライン JS に文字列 </script> は
+// 現れ得ないため、この順序が安全側)
 function scanMarkup(source, file) {
-	let rest = source.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gi, (_, css) => {
-		scanCss(css, file, '<style> ブロック');
-		return '';
-	});
-	rest = rest.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (_, attrs, body) => {
+	let rest = source.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (_, attrs, body) => {
 		scanJs(body, file, 'インライン <script>');
 		// タグ自体の属性(src 等)は残して属性走査で検査する
 		return `<script${attrs}></script>`;
+	});
+	rest = rest.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gi, (_, css) => {
+		scanCss(css, file, '<style> ブロック');
+		return '';
 	});
 	for (const tag of rest.matchAll(/<([a-zA-Z][a-zA-Z0-9:-]*)((?:"[^"]*"|'[^']*'|[^>])*)>/g)) {
 		const tagName = tag[1].toLowerCase();
@@ -147,7 +164,7 @@ function collectFiles(dir) {
 		const path = join(dir, entry.name);
 		if (entry.isDirectory()) {
 			files.push(...collectFiles(path));
-		} else if (SCAN_EXTENSIONS.has(extname(entry.name))) {
+		} else if (SCAN_EXTENSIONS.has(extname(entry.name).toLowerCase())) {
 			files.push(path);
 		}
 	}
@@ -220,7 +237,7 @@ if (existsSync(buildDir)) {
 	for (const path of collectFiles(buildDir)) {
 		const file = relative(buildDir, path);
 		const source = readFileSync(path, 'utf8');
-		const ext = extname(path);
+		const ext = extname(path).toLowerCase();
 		if (ext === '.html' || ext === '.svg') {
 			scanMarkup(source, file);
 		} else if (ext === '.css') {
@@ -237,7 +254,7 @@ if (errors.length > 0) {
 	if (errors.some((error) => error.startsWith('外部 URL 参照'))) {
 		console.error(
 			'  ※ 通信しない URL の誤検出であれば、scripts/check-static.mjs の' +
-				' ALLOWED_URL_PREFIXES に根拠コメント付きで追加してください'
+				' ALLOWED_JS_URL_PREFIXES / ALLOWED_NAMESPACE_URIS に根拠コメント付きで追加してください'
 		);
 	}
 	process.exit(1);

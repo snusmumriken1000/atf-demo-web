@@ -169,6 +169,26 @@ describe('check-static.mjs', () => {
 		expect(result.status).toBe(0);
 	});
 
+	it('JS の XML 名前空間 URI(完全一致)は許容する', () => {
+		const result = runCheck({
+			...validBuild,
+			'_app/immutable/chunks/ns.js':
+				"const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');"
+		});
+		expect(result.status).toBe(0);
+	});
+
+	it('JS の名前空間 URI に一致しない w3.org URL は検出する', () => {
+		const result = runCheck({
+			...validBuild,
+			// 完全一致リスト運用の確認: プレフィックスは同じでも実在リソースの
+			// パスは許容しない
+			'_app/immutable/chunks/w3.js': 'fetch("http://www.w3.org/Icons/valid-html401.png");'
+		});
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('http://www.w3.org/Icons/valid-html401.png');
+	});
+
 	it('JS の許容外 URL リテラルは失敗する', () => {
 		const result = runCheck({
 			...validBuild,
@@ -238,11 +258,77 @@ describe('check-static.mjs', () => {
 		expect(result.status).toBe(0);
 	});
 
+	it('JS 向け許容リストの URL でも HTML 属性(img src 等)では検出する', () => {
+		const result = runCheck({
+			...validBuild,
+			// 許容はコンテキストごとに分離されている: JS リテラル文脈で許容される
+			// URL でも、リソースとして読み込まれる属性値では違反とする
+			'index.html': page(
+				`${links('./showcase', './profile')}<img src="https://svelte.dev/e/logo.png">`
+			),
+			'showcase.html': page(
+				`${links('#main', './', './profile')}<img src="http://www.w3.org/Icons/valid-html401.png">`
+			)
+		});
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('https://svelte.dev/e/logo.png');
+		expect(result.stderr).toContain('http://www.w3.org/Icons/valid-html401.png');
+	});
+
+	it('インライン <script> 内の外部 URL(fetch 等)は検出する', () => {
+		const result = runCheck({
+			...validBuild,
+			'index.html': page(
+				`${links('./showcase', './profile')}<script>fetch("https://analytics.example.com/beacon");</script>`
+			)
+		});
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('インライン <script>');
+		expect(result.stderr).toContain('https://analytics.example.com/beacon');
+	});
+
+	it('JS 文字列に <style> タグが含まれても後続の外部 URL を検出する', () => {
+		const result = runCheck({
+			...validBuild,
+			// <style> 除去が <script> 抽出より先だと、"<style>"…"</style>" の間の
+			// コードが script 本文から欠けて素通りする(その回帰テスト)
+			'index.html': page(
+				`${links('./showcase', './profile')}<script>const a = "<style>"; fetch("https://api.example.com/x"); const b = "</style>";</script>`
+			)
+		});
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('https://api.example.com/x');
+	});
+
+	it('style 属性内の外部 url() は検出する', () => {
+		const result = runCheck({
+			...validBuild,
+			'index.html': page(
+				`${links('./showcase', './profile')}<div style="background: url('https://cdn.example.com/bg.png')">x</div>`
+			)
+		});
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('style 属性');
+		expect(result.stderr).toContain('https://cdn.example.com/bg.png');
+	});
+
+	it('data: URI の favicon に含まれる名前空間 URI は許容する', () => {
+		const result = runCheck({
+			...validBuild,
+			// 実ビルドの favicon と同じ形式(data: URI 内の xmlns='http://www.w3.org/2000/svg')
+			'index.html': page(links('#main', './showcase', './profile')).replace(
+				'<head>',
+				`<head><link rel="icon" href="data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%3e%3c/svg%3e" />`
+			)
+		});
+		expect(result.status).toBe(0);
+	});
+
 	it('xmlns / xmlns:* の名前空間宣言は許容する', () => {
 		const result = runCheck({
 			...validBuild,
-			// w3.org は許容プレフィックスでも通るため、属性名による許容を
-			// 確認する目的で許容リスト外の名前空間 URI も含める
+			// 属性名(xmlns / xmlns:*)による許容を確認する目的で、
+			// 許容リスト外の名前空間 URI も含める
 			'icon.svg':
 				'<svg xmlns="http://www.w3.org/2000/svg" xmlns:custom="https://ns.example.com/custom"><rect/></svg>'
 		});
