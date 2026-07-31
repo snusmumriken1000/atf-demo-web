@@ -178,6 +178,15 @@ describe('check-static.mjs', () => {
 		expect(result.stderr).toContain('https://api.example.com/data');
 	});
 
+	it('JS の文字列途中に現れる絶対 URL も検出する', () => {
+		const result = runCheck({
+			...validBuild,
+			'_app/immutable/chunks/req.js': 'const u = "GET https://api.example.com/x";'
+		});
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('https://api.example.com/x');
+	});
+
 	it('JS のプロトコル相対 URL リテラルも検出する', () => {
 		const result = runCheck({
 			...validBuild,
@@ -202,6 +211,31 @@ describe('check-static.mjs', () => {
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain('<iframe src>');
 		expect(result.stderr).toContain('<video poster>');
+	});
+
+	it('引用符なし(unquoted)属性値の外部 URL も検出する', () => {
+		const result = runCheck({
+			...validBuild,
+			'index.html': page(
+				`${links('./showcase', './profile')}<img src=https://cdn.example.com/a.png>`
+			),
+			'showcase.html': page(
+				`${links('#main', './', './profile')}<script src=//cdn.example.com/b.js></script>`
+			)
+		});
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('https://cdn.example.com/a.png');
+		expect(result.stderr).toContain('//cdn.example.com/b.js');
+	});
+
+	it('引用符なしの <a href> 外部ハイパーリンクも許容する', () => {
+		const result = runCheck({
+			...validBuild,
+			'index.html': page(
+				`${links('./showcase', './profile')}<a href=https://github.com/example>link</a>`
+			)
+		});
+		expect(result.status).toBe(0);
 	});
 
 	it('xmlns / xmlns:* の名前空間宣言は許容する', () => {

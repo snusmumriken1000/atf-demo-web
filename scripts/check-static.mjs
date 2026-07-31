@@ -90,11 +90,17 @@ function scanCss(css, file, context) {
 	}
 }
 
-// JS(*.js / インライン <script>)の文字列リテラル文脈(" ' ` の直後)に
-// 現れる「ドットを含むホスト形」の URL を検査する。テンプレートリテラルも対象
+// JS(*.js / インライン <script>)を検査する。
+//   - 絶対 URL(https?://…)はソース中のどこに現れても検出する
+//     (文字列の途中・連結・コメント内も対象。default-deny 側に倒す)
+//   - プロトコル相対 URL(//host/…)はコメントと区別が付かないため、
+//     文字列リテラル文脈(" ' ` の直後)の「ドットを含むホスト形」のみ検出する
 function scanJs(source, file, context) {
-	const literalUrl = /["'`]((?:https?:)?\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s"'`\\]*)/gi;
-	for (const match of source.matchAll(literalUrl)) {
+	for (const match of source.matchAll(/https?:\/\/[^\s"'`<>\\)]+/gi)) {
+		reportUrl(file, context, match[0]);
+	}
+	const literalRelative = /["'`](\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s"'`\\]*)/gi;
+	for (const match of source.matchAll(literalRelative)) {
 		reportUrl(file, context, match[1]);
 	}
 }
@@ -113,9 +119,12 @@ function scanMarkup(source, file) {
 	});
 	for (const tag of rest.matchAll(/<([a-zA-Z][a-zA-Z0-9:-]*)((?:"[^"]*"|'[^']*'|[^>])*)>/g)) {
 		const tagName = tag[1].toLowerCase();
-		for (const attr of tag[2].matchAll(/([^\s=/'"<>]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
+		// 属性値は引用符あり(" ')に加え、引用符なし(unquoted)形式にも対応する
+		for (const attr of tag[2].matchAll(
+			/([^\s=/'"<>]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/g
+		)) {
 			const attrName = attr[1].toLowerCase();
-			const value = attr[2] ?? attr[3];
+			const value = attr[2] ?? attr[3] ?? attr[4];
 			// 許容 (1): 外部サイトへのハイパーリンク
 			if (isHyperlink(tagName, attrName)) continue;
 			// 許容 (2): 名前空間宣言(通信しない識別子)
