@@ -31,4 +31,30 @@ describe('profile ページ(/profile)', () => {
 			expect(link.getAttribute('href')).toMatch(/^https:\/\//);
 		}
 	});
+
+	it('任意フィールドをすべて省略しても必須情報を表示できる', () => {
+		const originalProfile = content.profile;
+		const originalWorks = content.works;
+
+		content.profile = {
+			sectionLabels: originalProfile.sectionLabels,
+			workMetaLabels: originalProfile.workMetaLabels,
+			career: [{ period: '2026', title: 'テスト経歴' }],
+			skills: [{ label: 'テスト分類', items: [{ name: 'テストスキル' }] }]
+		};
+		content.works = [{ id: 'minimal-work', title: '最小作品', blurb: '必須項目のみ', hue: 0 }];
+
+		try {
+			render(Page);
+
+			expect(screen.getByRole('heading', { name: 'テスト経歴' })).toBeInTheDocument();
+			expect(screen.getByText('テストスキル')).toBeInTheDocument();
+			expect(screen.getByRole('heading', { name: '最小作品' })).toBeInTheDocument();
+			expect(screen.queryByRole('link', { name: /GitHub/ })).not.toBeInTheDocument();
+			expect(document.querySelector('#work-minimal-work dl')).toBeNull();
+		} finally {
+			content.profile = originalProfile;
+			content.works = originalWorks;
+		}
+	});
 });
