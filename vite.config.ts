@@ -13,12 +13,13 @@ export default defineConfig({
 			adapter: adapter()
 		})
 	],
+	// vitest 実行時は Svelte のクライアントビルドを解決させる(jsdom コンポーネントテスト用)
+	resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
 	test: {
 		expect: { requireAssertions: true },
-		// NOTE: 現状は node 環境の unit テストのみ。`*.svelte.{test,spec}.ts` は
-		// どのプロジェクトにも属さず実行されない(黙ってスキップされる)点に注意。
-		// コンポーネントテスト用の browser/jsdom プロジェクトは面 1・面 2 の
-		// UI 実装 Issue で導入予定。
+		// テストは 2 プロジェクト構成:
+		// - server: node 環境の unit テスト(*.svelte.{test,spec}.ts を除く)
+		// - client: jsdom 環境のコンポーネント・attachment テスト(*.svelte.{test,spec}.ts)
 		projects: [
 			{
 				extends: './vite.config.ts',
@@ -27,6 +28,15 @@ export default defineConfig({
 					environment: 'node',
 					include: ['src/**/*.{test,spec}.{js,ts}', 'scripts/**/*.{test,spec}.{js,ts}'],
 					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
+				}
+			},
+			{
+				extends: './vite.config.ts',
+				test: {
+					name: 'client',
+					environment: 'jsdom',
+					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+					setupFiles: ['./vitest-setup-client.ts']
 				}
 			}
 		]
