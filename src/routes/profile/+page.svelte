@@ -59,9 +59,10 @@
 		<section aria-labelledby="skills-heading">
 			<h2 id="skills-heading">{profile.sectionLabels.skills}</h2>
 			<div class="skill-groups">
-				{#each profile.skills as group (group.label)}
-					<section class="skill-group" aria-labelledby={'skill-' + group.label}>
-						<h3 id={'skill-' + group.label}>{group.label}</h3>
+				{#each profile.skills as group, index (group.label)}
+					{@const headingId = `skill-group-${index + 1}`}
+					<section class="skill-group" aria-labelledby={headingId}>
+						<h3 id={headingId}>{group.label}</h3>
 						<ul>
 							{#each group.items as skill (skill.name)}
 								<li>

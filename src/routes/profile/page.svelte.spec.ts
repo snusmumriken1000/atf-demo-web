@@ -32,6 +32,26 @@ describe('profile ページ(/profile)', () => {
 		}
 	});
 
+	it('空白を含むスキル分類名でも安全な ID で見出しを関連付ける', () => {
+		const originalProfile = content.profile;
+		content.profile = {
+			...originalProfile,
+			skills: [{ label: 'Front End', items: [{ name: 'TypeScript' }] }]
+		};
+
+		try {
+			render(Page);
+
+			const heading = screen.getByRole('heading', { level: 3, name: 'Front End' });
+			const group = heading.closest('section');
+			expect(heading.id).toMatch(/^skill-group-\d+$/);
+			expect(heading.id).not.toContain(' ');
+			expect(group).toHaveAttribute('aria-labelledby', heading.id);
+		} finally {
+			content.profile = originalProfile;
+		}
+	});
+
 	it('任意フィールドをすべて省略しても必須情報を表示できる', () => {
 		const originalProfile = content.profile;
 		const originalWorks = content.works;
