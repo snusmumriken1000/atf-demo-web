@@ -31,6 +31,8 @@ Thumbs.db
 # Test / coverage
 coverage/
 .nyc_output/
+# Playwright MCP の検証アーティファクト(エージェント検証セッションで生成される)
+.playwright-mcp/
 
 # Misc
 *.tsbuildinfo
