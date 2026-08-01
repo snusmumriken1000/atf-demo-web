@@ -244,7 +244,7 @@ export async function runRuntimeNetworkCheck() {
 	}
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
 	runRuntimeNetworkCheck().catch((error) => {
 		console.error('check-runtime-network: NG');
 		console.error(error instanceof Error ? error.message : error);

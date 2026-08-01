@@ -31,4 +31,21 @@ describe('showcase ページ(/showcase)', () => {
 
 		expect(container.querySelector('.fade-pending')).toBeNull();
 	});
+
+	it('手描き工程と装飾用の手をsemanticを変えずに配置する', () => {
+		vi.stubGlobal(
+			'matchMedia',
+			vi
+				.fn()
+				.mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })
+		);
+		const { container } = render(Page);
+		const steps = container.querySelectorAll('[data-draw-step]');
+		expect(steps.length).toBeGreaterThanOrEqual(10);
+		expect(container.querySelector('[data-drawing-hand]')).toHaveAttribute('aria-hidden', 'true');
+		expect(container.querySelectorAll('[data-draw-path]').length).toBe(steps.length);
+		expect(container.querySelectorAll('[data-draw-kind="card"]')).toHaveLength(4);
+		expect(container.querySelectorAll('.outlining')).toHaveLength(4);
+		expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+	});
 });

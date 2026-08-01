@@ -78,6 +78,19 @@ h6 {
 	transform: translateY(8px);
 }
 
+/* 手描き演出も既定は可視。attachment 起動後の active 状態だけ描画待ちにする。 */
+[data-drawing-state='active'] .draw-step:not([data-draw-kind='card']):not(.drawn) {
+	clip-path: inset(0 100% 0 0);
+}
+
+[data-drawing-state='active'] .draw-step[data-draw-kind='card']:not(.drawn) [data-draw-content] {
+	opacity: 0;
+}
+
+[data-drawing-state='active'] [data-draw-path] {
+	stroke-dashoffset: 1;
+}
+
 /*
  * prefers-reduced-motion の一括無効化。
  * 全アニメーション時間は motion トークン経由で指定する規約
@@ -89,5 +102,13 @@ h6 {
 		--motion-duration: 0ms;
 		--motion-duration-fade: 0ms;
 		--motion-stagger: 0ms;
+		--motion-draw-short: 0ms;
+		--motion-draw-medium: 0ms;
+		--motion-draw-long: 0ms;
+		--motion-draw-card: 0ms;
+	}
+
+	[data-drawing-state='active'] .draw-step {
+		opacity: 1;
 	}
 }
