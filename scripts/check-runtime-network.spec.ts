@@ -66,6 +66,8 @@ describe('静的配信サーバー', () => {
 		const directory = await mkdtemp(join(tmpdir(), 'atf-network-test-'));
 		await writeFile(join(directory, 'index.html'), '<h1>home</h1>');
 		await writeFile(join(directory, 'showcase.html'), '<h1>showcase</h1>');
+		await writeFile(join(directory, 'favicon.ico'), 'ico');
+		await writeFile(join(directory, 'apple-touch-icon.png'), 'png');
 		await writeFile(join(directory, 'asset.unknown'), 'binary-ish');
 		const { server, origin: fixtureOrigin } = await startStaticServer(directory);
 		cleanups.push(
@@ -86,6 +88,13 @@ describe('静的配信サーバー', () => {
 
 		const fallbackMimeResponse = await fetch(`${fixtureOrigin}/asset.unknown`);
 		expect(fallbackMimeResponse.headers.get('content-type')).toBe('application/octet-stream');
+
+		expect((await fetch(`${fixtureOrigin}/favicon.ico`)).headers.get('content-type')).toBe(
+			'image/x-icon'
+		);
+		expect((await fetch(`${fixtureOrigin}/apple-touch-icon.png`)).headers.get('content-type')).toBe(
+			'image/png'
+		);
 	});
 
 	it('存在しないファイルと build 外への traversal を 404 にする', async () => {
