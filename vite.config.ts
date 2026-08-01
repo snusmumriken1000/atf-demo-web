@@ -2,9 +2,21 @@ import { defineConfig } from 'vitest/config';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 
+const configuredBasePath = process.env.BASE_PATH ?? '';
+
+if (
+	configuredBasePath !== '' &&
+	(!/^\/(?:[A-Za-z0-9._~-]+\/)*[A-Za-z0-9._~-]+$/.test(configuredBasePath) ||
+		configuredBasePath.split('/').some((part) => part === '.' || part === '..'))
+) {
+	throw new Error('BASE_PATH は空文字または安全な絶対パスを指定してください');
+}
+const basePath = configuredBasePath as '' | `/${string}`;
+
 export default defineConfig({
 	plugins: [
 		sveltekit({
+			paths: { base: basePath },
 			compilerOptions: {
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
 				runes: ({ filename }) =>

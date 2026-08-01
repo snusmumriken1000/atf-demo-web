@@ -25,9 +25,9 @@ const links = (...hrefs: string[]) => hrefs.map((href) => `<a href="${href}">lin
 
 // 実際のプリレンダリング出力と同じ相対リンク構成(全ページ相互リンク)
 const validBuild = {
-	'index.html': page(links('#main', './showcase', './profile')),
-	'showcase.html': page(links('#main', './', './profile')),
-	'profile.html': page(links('#main', './', './showcase'))
+	'index.html': page(links('#main', './showcase/', './profile/')),
+	'showcase/index.html': page(links('#main', '../', '../profile/')),
+	'profile/index.html': page(links('#main', '../', '../showcase/'))
 };
 
 function runCheck(files: Record<string, string>) {
@@ -52,18 +52,18 @@ describe('check-static.mjs', () => {
 
 	it('ページが欠けていると失敗する', () => {
 		const withoutProfile = Object.fromEntries(
-			Object.entries(validBuild).filter(([name]) => name !== 'profile.html')
+			Object.entries(validBuild).filter(([name]) => name !== 'profile/index.html')
 		);
 		const result = runCheck(withoutProfile);
 		expect(result.status).toBe(1);
-		expect(result.stderr).toContain('profile.html');
+		expect(result.stderr).toContain('profile/index.html');
 	});
 
 	it('リンクが欠けて到達不能なページがあると失敗する', () => {
 		const result = runCheck({
 			...validBuild,
 			// showcase から他ページへのリンクをなくす → showcase 起点で到達不能
-			'showcase.html': page(links('#main'))
+			'showcase/index.html': page(links('#main'))
 		});
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain('到達できません');
@@ -71,9 +71,9 @@ describe('check-static.mjs', () => {
 
 	it('直接リンクがなくても推移的に到達できれば成功する', () => {
 		const result = runCheck({
-			'index.html': page(links('./showcase')),
-			'showcase.html': page(links('./profile')),
-			'profile.html': page(links('./'))
+			'index.html': page(links('./showcase/')),
+			'showcase/index.html': page(links('../profile/')),
+			'profile/index.html': page(links('../'))
 		});
 		expect(result.status).toBe(0);
 	});

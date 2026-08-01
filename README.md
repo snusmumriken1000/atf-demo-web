@@ -69,6 +69,32 @@ npm run dev        # 開発サーバー起動
 ナビゲーション 10 秒、フォント 3 秒、アニメーション 2 秒、最低観測 1 秒を含む通信静止待ち
 3 秒の有限な上限を持ち、ページや通信が停止しても無期限には待機しない。
 
+## GitHub Pages への公開
+
+初回のみ、リポジトリの **Settings → Pages → Build and deployment → Source** を
+**GitHub Actions** に設定する。以後は `main` への push または手動実行によって
+`.github/workflows/deploy-pages.yml` がビルド・検証・公開を行う。feature branch や Pull Request
+からは公開されない。
+
+公開ビルドは `BASE_PATH=/atf-demo-web` を明示し、`https://snusmumriken1000.github.io/atf-demo-web/`
+配下で動作する。workflow は公開後にも全 3 ルートを直接開き、ページ内遷移、遅延読み込み、base
+外を含む許可外通信がないことを Playwright で確認する。
+
+ローカルで Pages と同じ構成を検証する場合:
+
+```sh
+BASE_PATH=/atf-demo-web npm run verify
+```
+
+既に公開された URL だけを再検証する場合:
+
+```sh
+npm run check:deployed -- https://snusmumriken1000.github.io/atf-demo-web/
+```
+
+ロールバックは GitHub 上で正常だったコミットを `revert` し、その変更を `main` へマージする。
+過去の workflow を再実行するだけではソースの履歴が戻らないため、履歴に残る revert を優先する。
+
 ## ディレクトリ
 
 - `src/routes/` — ページ(ルーティング)

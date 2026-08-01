@@ -24,6 +24,15 @@ import { join, relative, extname } from 'node:path';
 import process from 'node:process';
 
 const buildDir = join(process.cwd(), 'build');
+const basePath = process.env.BASE_PATH ?? '';
+
+if (
+	basePath !== '' &&
+	(!/^\/(?:[A-Za-z0-9._~-]+\/)*[A-Za-z0-9._~-]+$/.test(basePath) ||
+		basePath.split('/').some((part) => part === '.' || part === '..'))
+) {
+	throw new Error('BASE_PATH は空文字または安全な絶対パスを指定してください');
+}
 
 // JS の文字列リテラル文脈でのみ許容する URL プレフィックス。
 // 追加する場合は「なぜ通信しないか」のコメントを必ず添えること。
@@ -44,11 +53,11 @@ const ALLOWED_NAMESPACE_URIS = new Set([
 	'http://www.w3.org/XML/1998/namespace'
 ]);
 
-// ページ名 → 出力ファイルの対応(adapter-static のデフォルト出力)
+// ページ名 → trailingSlash='always' の出力ファイル対応
 const pages = {
 	'/': 'index.html',
-	'/showcase': 'showcase.html',
-	'/profile': 'profile.html'
+	'/showcase': 'showcase/index.html',
+	'/profile': 'profile/index.html'
 };
 
 // 外部 URL 検査の対象拡張子(version.json / robots.txt 等は対象外)
@@ -208,14 +217,19 @@ if (errors.length === 0) {
 	// (./showcase など)になるため、ページの出力ファイル位置を基準に解決する
 	const normalize = (href, file) => {
 		if (href.startsWith('#')) return null;
-		const base = new URL(file, 'https://local/');
+		const deployedFile = `${basePath}/${file}`.replace(/\/+/g, '/');
+		const base = new URL(deployedFile, 'https://local/');
 		const url = new URL(href, base);
 		// 絶対 URL・プロトコル相対 URL(//host/…)など外部オリジンは内部リンクとして扱わない
 		if (url.origin !== base.origin) return null;
-		const path =
+		let path =
 			url.pathname.length > 1 && url.pathname.endsWith('/')
 				? url.pathname.slice(0, -1)
 				: url.pathname;
+		if (basePath) {
+			if (path !== basePath && !path.startsWith(`${basePath}/`)) return null;
+			path = path.slice(basePath.length) || '/';
+		}
 		return path in pages ? path : null;
 	};
 
@@ -284,4 +298,6 @@ if (errors.length > 0) {
 	process.exit(1);
 }
 
-console.log('check-static: OK(3 ページの存在・相互到達性・外部 URL 参照なしを確認)');
+console.log(
+	`check-static: OK(3 ページの存在・相互到達性・外部 URL 参照なしを確認, base=${basePath || '/'})`
+);

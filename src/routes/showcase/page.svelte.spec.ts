@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/svelte';
 import { content } from '$lib/data/content';
 import Page from './+page.svelte';
 
+const basePath = process.env.BASE_PATH ?? '';
+
 describe('showcase ページ(/showcase)', () => {
 	it('ステートメント(h1)が描画される', () => {
 		render(Page);
@@ -18,7 +20,7 @@ describe('showcase ページ(/showcase)', () => {
 		expect(tiles).toHaveLength(Math.min(featuredCount || content.works.length, 4));
 		expect(screen.getByRole('link', { name: /Two-Faced Portfolio/ })).toHaveAttribute(
 			'href',
-			'/profile#work-two-faced-portfolio'
+			`${basePath}/profile#work-two-faced-portfolio`
 		);
 	});
 

@@ -4,12 +4,39 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
 	classifyRequestUrl,
+	normalizeBasePath,
+	parseTargetUrl,
 	routeToFile,
 	startStaticServer,
 	throwIfViolations
 } from './check-runtime-network.mjs';
 
 const origin = 'http://127.0.0.1:4173';
+
+describe('公開 URL 入力', () => {
+	it('末尾 slash を除いた origin と base path に分解する', () => {
+		expect(parseTargetUrl('https://example.com/atf-demo-web/')).toEqual({
+			origin: 'https://example.com',
+			basePath: '/atf-demo-web'
+		});
+	});
+
+	it.each([
+		'https://user:secret@example.com/atf-demo-web/',
+		'https://example.com/atf-demo-web/?target=evil',
+		'https://example.com/atf-demo-web/#fragment',
+		'file:///tmp/build/index.html'
+	])('危険または対象が曖昧な URL %s を拒否する', (url) => {
+		expect(() => parseTargetUrl(url)).toThrow();
+	});
+
+	it.each(['/../private', '/atf-demo-web/', 'relative'])(
+		'危険な base path %s を拒否する',
+		(base) => {
+			expect(() => normalizeBasePath(base)).toThrow();
+		}
+	);
+});
 
 describe('classifyRequestUrl', () => {
 	it.each([
@@ -18,6 +45,16 @@ describe('classifyRequestUrl', () => {
 		['data URI', 'data:image/svg+xml;base64,PHN2Zy8+']
 	])('%s を許可する', (_, url) => {
 		expect(classifyRequestUrl(url, origin).allowed).toBe(true);
+	});
+
+	it('同じ origin でも許可 base の外側は拒否する', () => {
+		expect(
+			classifyRequestUrl(`${origin}/atf-demo-web/profile/`, origin, '/atf-demo-web').allowed
+		).toBe(true);
+		expect(classifyRequestUrl(`${origin}/private`, origin, '/atf-demo-web').allowed).toBe(false);
+		expect(
+			classifyRequestUrl(`${origin}/atf-demo-web-evil/x`, origin, '/atf-demo-web').allowed
+		).toBe(false);
 	});
 
 	it.each([
@@ -65,7 +102,8 @@ describe('静的配信サーバー', () => {
 	async function fixture() {
 		const directory = await mkdtemp(join(tmpdir(), 'atf-network-test-'));
 		await writeFile(join(directory, 'index.html'), '<h1>home</h1>');
-		await writeFile(join(directory, 'showcase.html'), '<h1>showcase</h1>');
+		await import('node:fs/promises').then(({ mkdir }) => mkdir(join(directory, 'showcase')));
+		await writeFile(join(directory, 'showcase', 'index.html'), '<h1>showcase</h1>');
 		await writeFile(join(directory, 'asset.unknown'), 'binary-ish');
 		const { server, origin: fixtureOrigin } = await startStaticServer(directory);
 		cleanups.push(
@@ -79,7 +117,7 @@ describe('静的配信サーバー', () => {
 		const fixtureOrigin = await fixture();
 		expect(new URL(fixtureOrigin).port).toMatch(/^\d+$/);
 
-		const routeResponse = await fetch(`${fixtureOrigin}/showcase`);
+		const routeResponse = await fetch(`${fixtureOrigin}/showcase/`);
 		expect(routeResponse.status).toBe(200);
 		expect(routeResponse.headers.get('content-type')).toBe('text/html; charset=utf-8');
 		expect(await routeResponse.text()).toContain('showcase');
@@ -103,12 +141,17 @@ describe('静的配信サーバー', () => {
 describe('routeToFile', () => {
 	it.each([
 		['/', '/index.html'],
-		['/showcase', '/showcase.html'],
-		['/showcase/', '/showcase.html'],
-		['/profile', '/profile.html'],
-		['/profile/', '/profile.html'],
+		['/showcase', '/showcase/index.html'],
+		['/showcase/', '/showcase/index.html'],
+		['/profile', '/profile/index.html'],
+		['/profile/', '/profile/index.html'],
 		['/_app/app.js', '/_app/app.js']
 	])('%s を %s に解決する', (route, expected) => {
 		expect(routeToFile(route)).toBe(expected);
+	});
+
+	it('base 外を拒否し base 内をファイルへ解決する', () => {
+		expect(routeToFile('/atf-demo-web/profile/', '/atf-demo-web')).toBe('/profile/index.html');
+		expect(routeToFile('/profile/', '/atf-demo-web')).toBeNull();
 	});
 });
