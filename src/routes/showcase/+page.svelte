@@ -8,7 +8,9 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import WorkTile from '$lib/components/WorkTile.svelte';
-	import { fadeInOnView } from '$lib/attachments/fadeInOnView';
+	import DrawingHand from '$lib/components/DrawingHand.svelte';
+	import SketchStroke from '$lib/components/SketchStroke.svelte';
+	import { handDrawnSequence } from '$lib/attachments/handDrawnSequence';
 	import { content } from '$lib/data/content';
 
 	const { site, hero } = content;
@@ -23,26 +25,35 @@
 	<title>{site.faces.showcase.label} | {site.title}</title>
 </svelte:head>
 
-<section class="showcase" data-face="visual">
+<section class="showcase" data-face="visual" {@attach handDrawnSequence()}>
+	<DrawingHand />
 	<header class="hero">
-		<p class="eyebrow rise">{hero.name}</p>
-		<h1 class="statement rise">
+		<p class="eyebrow draw-step" data-draw-step="eyebrow">{hero.name}<SketchStroke /></p>
+		<h1 class="statement">
 			{#each statementLines as line, index (index)}
-				{#if index > 0}<br />{/if}{line}
+				{#if index > 0}<br />{/if}<span
+					class="statement-line draw-step"
+					data-draw-step={`statement-${index + 1}`}>{line}<SketchStroke /></span
+				>
 			{/each}
 		</h1>
-		<p class="lead rise">{site.faces.showcase.lead}</p>
+		<p class="lead draw-step" data-draw-step="lead">{site.faces.showcase.lead}<SketchStroke /></p>
 		<!-- 下の作品バンドへのスクロール示唆(装飾のみ) -->
-		<p class="hint rise" aria-hidden="true">{site.navigation.scrollHint}</p>
+		<p class="hint draw-step" data-draw-step="hint" aria-hidden="true">
+			{site.navigation.scrollHint}<SketchStroke />
+		</p>
 	</header>
 
 	<section class="works" aria-labelledby="showcase-works-heading">
-		<h2 class="works-title" id="showcase-works-heading">{hero.worksLabel}</h2>
+		<h2 class="works-title draw-step" data-draw-step="works-heading" id="showcase-works-heading">
+			{hero.worksLabel}<SketchStroke />
+		</h2>
 		<ul>
-			{#each tiles as work (work.id)}
-				<li {@attach fadeInOnView()}>
+			{#each tiles as work, index (work.id)}
+				<li class="draw-step" data-draw-step={`work-${index + 1}`}>
 					<!-- タイルから面 2 の該当作品詳細(/profile#work-{id})へ -->
 					<WorkTile {work} href={resolve('/profile') + '#work-' + work.id} />
+					<SketchStroke />
 				</li>
 			{/each}
 		</ul>
@@ -82,6 +93,19 @@
 		letter-spacing: -0.02em;
 	}
 
+	.statement-line,
+	.draw-step {
+		position: relative;
+	}
+
+	.statement-line {
+		display: inline-block;
+	}
+
+	.showcase:not([data-drawing-state='active']) :global([data-drawing-hand]) {
+		display: none;
+	}
+
 	@media (max-width: 40rem) {
 		.statement {
 			font-size: var(--text-3xl);
@@ -101,30 +125,6 @@
 		font-family: var(--font-display);
 		font-size: var(--text-sm);
 		color: var(--color-fg-muted);
-	}
-
-	/* 入場フェード(opacity + わずかな上昇)。要素間は --motion-stagger でずらす */
-	@keyframes rise-in {
-		from {
-			opacity: 0;
-			transform: translateY(8px);
-		}
-	}
-
-	.rise {
-		animation: rise-in var(--motion-duration-fade) var(--motion-ease) backwards;
-	}
-
-	.statement.rise {
-		animation-delay: var(--motion-stagger);
-	}
-
-	.lead.rise {
-		animation-delay: calc(var(--motion-stagger) * 2);
-	}
-
-	.hint.rise {
-		animation-delay: calc(var(--motion-stagger) * 3);
 	}
 
 	/* ---- セクション 2: 作品バンド ---- */
@@ -148,5 +148,9 @@
 		gap: var(--space-6);
 		margin-top: var(--space-6);
 		padding: 0;
+	}
+
+	li {
+		position: relative;
 	}
 </style>

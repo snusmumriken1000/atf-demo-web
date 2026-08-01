@@ -53,6 +53,10 @@
 	--motion-duration-fade: 400ms;
 	/* stagger(要素間の出現ずらし)の 1 段分 */
 	--motion-stagger: 80ms;
+	--motion-draw-short: 400ms;
+	--motion-draw-medium: 750ms;
+	--motion-draw-long: 850ms;
+	--motion-draw-card: 650ms;
 	--motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
