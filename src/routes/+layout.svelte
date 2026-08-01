@@ -1,6 +1,8 @@
 <script lang="ts">
 	import '$lib/styles/global.css';
-	import favicon from '$lib/assets/favicon.svg';
+	import appleTouchIcon from '$lib/assets/apple-touch-icon.png';
+	import faviconIco from '$lib/assets/favicon.ico';
+	import faviconSvg from '$lib/assets/favicon.svg';
 	// preload の href は Vite のハッシュ付き URL に追従させるため必ず import 経由にする
 	import fontUrl from '$lib/assets/fonts/space-grotesk-latin-var.woff2';
 	import FaceSwitcher from '$lib/components/FaceSwitcher.svelte';
@@ -25,7 +27,10 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" href={faviconSvg} type="image/svg+xml" />
+	<link rel="icon" href={faviconIco} sizes="16x16 32x32" />
+	<link rel="apple-touch-icon" href={appleTouchIcon} sizes="180x180" />
+	<meta name="theme-color" content="#0b0f1a" />
 	<link rel="preload" as="font" type="font/woff2" crossorigin="anonymous" href={fontUrl} />
 </svelte:head>
 
