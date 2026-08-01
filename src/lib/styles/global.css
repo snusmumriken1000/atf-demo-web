@@ -78,15 +78,27 @@ h6 {
 	transform: translateY(8px);
 }
 
-/* 手描き演出も既定は可視。attachment 起動後の active 状態だけ描画待ちにする。 */
+/*
+ * 手描き演出は既定を可視に保ち、head の同期スクリプトが通常モーションと
+ * 判定した場合だけ、hydration 前から描画待ちにする。
+ */
+html[data-motion='animate']
+	.showcase:not([data-drawing-state])
+	.draw-step:not([data-draw-kind='card']),
 [data-drawing-state='active'] .draw-step:not([data-draw-kind='card']):not(.drawn) {
 	clip-path: inset(0 100% 0 0);
 }
 
+html[data-motion='animate']
+	.showcase:not([data-drawing-state])
+	.draw-step[data-draw-kind='card']
+	[data-draw-content],
 [data-drawing-state='active'] .draw-step[data-draw-kind='card']:not(.drawn) [data-draw-content] {
 	opacity: 0;
+	visibility: hidden;
 }
 
+html[data-motion='animate'] .showcase:not([data-drawing-state]) [data-draw-path],
 [data-drawing-state='active'] [data-draw-path] {
 	stroke-dashoffset: 1;
 }

@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const layout = readFileSync(fileURLToPath(new URL('./+layout.svelte', import.meta.url)), 'utf8');
+const app = readFileSync(fileURLToPath(new URL('../app.html', import.meta.url)), 'utf8');
 
 describe('site icon head metadata', () => {
 	it('links SVG, ICO and Apple touch icon imports', () => {
@@ -16,5 +17,16 @@ describe('site icon head metadata', () => {
 
 	it('sets a theme color matching the icon background', () => {
 		expect(layout).toContain('<meta name="theme-color" content="#0b0f1a" />');
+	});
+});
+
+describe('initial motion state', () => {
+	it('marks normal motion before Svelte head and leaves no-JS markup untouched', () => {
+		const marker = 'document.documentElement.dataset.motion = matchMedia(';
+		expect(app).toContain(marker);
+		expect(app.indexOf(marker)).toBeLessThan(app.indexOf('%sveltekit.head%'));
+		expect(app).toContain("? 'reduce'");
+		expect(app).toContain(": 'animate'");
+		expect(app).not.toContain('<html data-motion=');
 	});
 });
