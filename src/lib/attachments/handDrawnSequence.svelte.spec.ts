@@ -41,8 +41,12 @@ describe('handDrawnSequence', () => {
 		expect(root.querySelector<HTMLElement>('[data-draw-step]')?.inert).toBe(false);
 	});
 
-	it('初回だけactiveにし、detachでobserverと状態を片付ける', () => {
+	it('setItemだけ失敗してgetItemがnullでもfallbackし、操作可能なcardだけをinertにする', () => {
 		sessionStorage.clear();
+		window.name = '';
+		const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+			throw new Error('blocked');
+		});
 		const preference = media(false);
 		vi.stubGlobal(
 			'matchMedia',
@@ -57,12 +61,21 @@ describe('handDrawnSequence', () => {
 		);
 		const root = document.createElement('section');
 		root.innerHTML =
-			'<p data-draw-step="eyebrow"><a href="/profile">work</a></p><i data-drawing-hand></i>';
+			'<h1 data-draw-step="statement-1">Accessible heading</h1><article data-draw-step="work-1" data-draw-kind="card"><a href="/profile">work</a></article><i data-drawing-hand></i>';
 
 		const detach = handDrawnSequence()(root);
 		expect(root.dataset.drawingState).toBe('active');
-		expect(root.querySelector<HTMLElement>('[data-draw-step]')?.inert).toBe(true);
-		expect(sessionStorage.getItem('atf:showcase-hand-drawn:v1')).toBe('1');
+		expect(root.querySelector<HTMLElement>('h1')?.inert).not.toBe(true);
+		expect(root.querySelector<HTMLElement>('[data-draw-kind="card"]')?.inert).toBe(true);
+		expect(root.querySelector('h1')).toHaveAccessibleName('Accessible heading');
+		expect(sessionStorage.getItem('atf:showcase-hand-drawn:v1')).toBeNull();
+		expect(window.name).toContain('atf:showcase-hand-drawn:v1');
+		setItem.mockRestore();
+		const revisit = document.createElement('section');
+		revisit.innerHTML = '<p data-draw-step="lead">revisit</p>';
+		const detachRevisit = handDrawnSequence()(revisit);
+		expect(revisit.dataset.drawingState).toBe('skipped');
+		detachRevisit?.();
 		const onChange = vi.mocked(preference.addEventListener).mock.calls[0]?.[1];
 		if (typeof onChange === 'function') onChange({ matches: true } as MediaQueryListEvent);
 		expect(root.dataset.drawingState).toBe('skipped');

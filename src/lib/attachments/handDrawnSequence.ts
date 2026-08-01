@@ -24,10 +24,11 @@ export function resolveHandPosition(
 
 function hasPlayed(): boolean {
 	try {
-		return sessionStorage.getItem(SESSION_KEY) === '1';
+		if (sessionStorage.getItem(SESSION_KEY) === '1') return true;
 	} catch {
-		return memorySessions.has(SESSION_KEY) || window.name.includes(WINDOW_NAME_MARKER);
+		// storageが読めなくてもtab内fallbackを確認する
 	}
+	return memorySessions.has(SESSION_KEY) || window.name.includes(WINDOW_NAME_MARKER);
 }
 
 function markPlayed(): void {
@@ -94,7 +95,9 @@ export function handDrawnSequence(): Attachment<HTMLElement> {
 
 		root.dataset.drawingState = 'active';
 		markPlayed();
-		root.querySelectorAll<HTMLElement>('[data-draw-step]').forEach((step) => (step.inert = true));
+		root
+			.querySelectorAll<HTMLElement>('[data-draw-step][data-draw-kind="card"]')
+			.forEach((step) => (step.inert = true));
 
 		const positions = new Map<HTMLElement, { startX: number; x: number; y: number }>();
 		const measure = () => {
@@ -208,7 +211,9 @@ export function handDrawnSequence(): Attachment<HTMLElement> {
 				stopMonitoring();
 				finish(root, hand, 'complete');
 			}
-		})().catch(() => stop('skipped'));
+		})().catch(() => {
+			if (!cancelled) stop('skipped');
+		});
 
 		return () => {
 			stop('skipped');
