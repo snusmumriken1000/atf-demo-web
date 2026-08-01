@@ -1,10 +1,6 @@
 import type { Attachment } from 'svelte/attachments';
 import { CARD_DRAW_REDUCTION_MS, resolveDrawingSchedule } from '$lib/motion/drawingSchedule';
 
-const SESSION_KEY = 'atf:showcase-hand-drawn:v1';
-const WINDOW_NAME_MARKER = `__${SESSION_KEY}__`;
-const memorySessions = new Set<string>();
-
 const PEN_TIP_X_RATIO = 11 / 112;
 const PEN_TIP_Y_RATIO = 84 / 88;
 
@@ -20,25 +16,6 @@ export function resolveHandPosition(
 		x: targetX - handRect.width * PEN_TIP_X_RATIO,
 		y: targetY - handRect.height * PEN_TIP_Y_RATIO
 	};
-}
-
-function hasPlayed(): boolean {
-	try {
-		if (sessionStorage.getItem(SESSION_KEY) === '1') return true;
-	} catch {
-		// storageが読めなくてもtab内fallbackを確認する
-	}
-	return memorySessions.has(SESSION_KEY) || window.name.includes(WINDOW_NAME_MARKER);
-}
-
-function markPlayed(): void {
-	memorySessions.add(SESSION_KEY);
-	try {
-		sessionStorage.setItem(SESSION_KEY, '1');
-	} catch {
-		/* privacy mode: module memory + same-tab reload fallback */
-		if (!window.name.includes(WINDOW_NAME_MARKER)) window.name += WINDOW_NAME_MARKER;
-	}
 }
 
 function finish(root: HTMLElement, hand: HTMLElement | null, state: 'complete' | 'skipped') {
@@ -84,7 +61,7 @@ export function handDrawnSequence(): Attachment<HTMLElement> {
 		};
 		media.addEventListener?.('change', onMotionChange);
 
-		if (media.matches || hasPlayed()) {
+		if (media.matches) {
 			finish(root, hand, 'skipped');
 			return () => {
 				media.removeEventListener?.('change', onMotionChange);
@@ -94,7 +71,6 @@ export function handDrawnSequence(): Attachment<HTMLElement> {
 		}
 
 		root.dataset.drawingState = 'active';
-		markPlayed();
 		root
 			.querySelectorAll<HTMLElement>('[data-draw-step][data-draw-kind="card"]')
 			.forEach((step) => (step.inert = true));
@@ -169,6 +145,7 @@ export function handDrawnSequence(): Attachment<HTMLElement> {
 				const revealTarget = isCard
 					? (step.querySelector<HTMLElement>('[data-draw-content]') ?? step)
 					: step;
+				if (isCard) revealTarget.style.visibility = 'visible';
 				const animation = animate(revealTarget, {
 					opacity: isCard ? [0, 1] : 1,
 					clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'],

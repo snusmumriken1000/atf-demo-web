@@ -41,12 +41,9 @@ describe('handDrawnSequence', () => {
 		expect(root.querySelector<HTMLElement>('[data-draw-step]')?.inert).toBe(false);
 	});
 
-	it('setItemだけ失敗してgetItemがnullでもfallbackし、操作可能なcardだけをinertにする', () => {
-		sessionStorage.clear();
-		window.name = '';
-		const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-			throw new Error('blocked');
-		});
+	it('表示のたびに再生し、操作可能なcardだけをinertにする', () => {
+		const storageGet = vi.spyOn(Storage.prototype, 'getItem');
+		const storageSet = vi.spyOn(Storage.prototype, 'setItem');
 		const preference = media(false);
 		vi.stubGlobal(
 			'matchMedia',
@@ -68,13 +65,12 @@ describe('handDrawnSequence', () => {
 		expect(root.querySelector<HTMLElement>('h1')?.inert).not.toBe(true);
 		expect(root.querySelector<HTMLElement>('[data-draw-kind="card"]')?.inert).toBe(true);
 		expect(root.querySelector('h1')).toHaveAccessibleName('Accessible heading');
-		expect(sessionStorage.getItem('atf:showcase-hand-drawn:v1')).toBeNull();
-		expect(window.name).toContain('atf:showcase-hand-drawn:v1');
-		setItem.mockRestore();
+		expect(storageGet).not.toHaveBeenCalled();
+		expect(storageSet).not.toHaveBeenCalled();
 		const revisit = document.createElement('section');
 		revisit.innerHTML = '<p data-draw-step="lead">revisit</p>';
 		const detachRevisit = handDrawnSequence()(revisit);
-		expect(revisit.dataset.drawingState).toBe('skipped');
+		expect(revisit.dataset.drawingState).toBe('active');
 		detachRevisit?.();
 		const onChange = vi.mocked(preference.addEventListener).mock.calls[0]?.[1];
 		if (typeof onChange === 'function') onChange({ matches: true } as MediaQueryListEvent);
