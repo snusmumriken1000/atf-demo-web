@@ -164,6 +164,19 @@ function scanMarkup(source, file) {
 				scanCss(value, file, `<${tagName}> の style 属性`);
 				continue;
 			}
+			// Pages の project base 配信では /_app/... のような root 絶対参照は
+			// 同一 origin でも別サイトを指す。<a>/<area> 以外のリソース属性を
+			// default-deny にして、実ブラウザで preload が観測されない場合も防ぐ。
+			if (
+				basePath &&
+				value.startsWith('/') &&
+				!value.startsWith('//') &&
+				value !== basePath &&
+				!value.startsWith(`${basePath}/`)
+			) {
+				errors.push(`base 外の絶対リソース参照: ${file} の <${tagName} ${attrName}> → ${value}`);
+				continue;
+			}
 			for (const url of extractAttrUrls(value)) {
 				reportUrl(file, `<${tagName} ${attrName}>`, url);
 			}

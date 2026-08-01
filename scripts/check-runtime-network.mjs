@@ -12,6 +12,8 @@ const QUIET_WINDOW_MS = 300;
 const MIN_OBSERVATION_MS = 1_000;
 const QUIET_TIMEOUT_MS = 3_000;
 const SELF_CHECK_DELAY_MS = 600;
+export const DEPLOYMENT_ORIGIN = 'https://snusmumriken1000.github.io';
+export const DEPLOYMENT_BASE_PATH = '/atf-demo-web';
 const MIME_TYPES = {
 	'.css': 'text/css; charset=utf-8',
 	'.html': 'text/html; charset=utf-8',
@@ -154,6 +156,28 @@ function observeRequests(page, route, origin, basePath, violations) {
 	return () => lastRequestAt;
 }
 
+// Playwright の request event は観測用であり、redirect 後の要求を止められない。
+// route interception で送出前に許可境界を判定し、公開 URL から base 外へ
+// redirect されても接続を開始しない。
+export async function installRequestGuard(page, routeName, origin, basePath, violations) {
+	await page.route('**/*', async (route) => {
+		const request = route.request();
+		const result = classifyRequestUrl(request.url(), origin, basePath);
+		if (result.allowed) {
+			await route.continue();
+			return;
+		}
+		violations.push({
+			route: routeName,
+			method: request.method(),
+			resourceType: request.resourceType(),
+			url: request.url(),
+			reason: result.reason
+		});
+		await route.abort('blockedbyclient');
+	});
+}
+
 export function throwIfViolations(violations) {
 	if (!violations.length) return;
 	throw new Error(
@@ -162,10 +186,11 @@ export function throwIfViolations(violations) {
 }
 
 const routeUrl = (origin, basePath, route) => `${origin}${basePath}${route}`;
-async function verifyRoute(browser, origin, basePath, route, violations) {
+async function verifyRoute(browser, origin, basePath, route, violations, guardRequests) {
 	const context = await browser.newContext();
 	try {
 		const page = await context.newPage();
+		if (guardRequests) await installRequestGuard(page, route, origin, basePath, violations);
 		const last = observeRequests(page, route, origin, basePath, violations);
 		const response = await page.goto(routeUrl(origin, basePath, route), {
 			waitUntil: 'domcontentloaded',
@@ -179,10 +204,11 @@ async function verifyRoute(browser, origin, basePath, route, violations) {
 	}
 }
 
-async function verifyInternalNavigation(browser, origin, basePath, violations) {
+async function verifyInternalNavigation(browser, origin, basePath, violations, guardRequests) {
 	const context = await browser.newContext();
 	try {
 		const page = await context.newPage();
+		if (guardRequests) await installRequestGuard(page, '内部遷移', origin, basePath, violations);
 		const last = observeRequests(page, '内部遷移', origin, basePath, violations);
 		await page.goto(routeUrl(origin, basePath, '/'), {
 			waitUntil: 'domcontentloaded',
@@ -240,15 +266,13 @@ export function parseTargetUrl(value) {
 	} catch {
 		throw new Error('公開 URL が不正です');
 	}
-	if (
-		!['http:', 'https:'].includes(url.protocol) ||
-		url.username ||
-		url.password ||
-		url.search ||
-		url.hash
-	)
-		throw new Error('公開 URL は credential/query/fragment のない http(s) URL を指定してください');
-	return { origin: url.origin, basePath: normalizeBasePath(url.pathname.replace(/\/$/, '')) };
+	if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash)
+		throw new Error('公開 URL は credential/query/fragment のない HTTPS URL を指定してください');
+	const basePath = normalizeBasePath(url.pathname.replace(/\/$/, ''));
+	if (url.origin !== DEPLOYMENT_ORIGIN || basePath !== DEPLOYMENT_BASE_PATH) {
+		throw new Error(`公開 URL は ${DEPLOYMENT_ORIGIN}${DEPLOYMENT_BASE_PATH}/ に限定されています`);
+	}
+	return { origin: url.origin, basePath };
 }
 
 export async function runRuntimeNetworkCheck(targetUrl = process.argv[2]) {
@@ -256,6 +280,7 @@ export async function runRuntimeNetworkCheck(targetUrl = process.argv[2]) {
 	let browser;
 	try {
 		let target;
+		const remoteMode = Boolean(targetUrl);
 		if (targetUrl) target = parseTargetUrl(targetUrl);
 		else {
 			const buildDir = join(process.cwd(), 'build');
@@ -268,8 +293,8 @@ export async function runRuntimeNetworkCheck(targetUrl = process.argv[2]) {
 		browser = await chromium.launch({ headless: true });
 		const violations = [];
 		for (const route of ROUTES)
-			await verifyRoute(browser, target.origin, target.basePath, route, violations);
-		await verifyInternalNavigation(browser, target.origin, target.basePath, violations);
+			await verifyRoute(browser, target.origin, target.basePath, route, violations, remoteMode);
+		await verifyInternalNavigation(browser, target.origin, target.basePath, violations, remoteMode);
 		await verifyMonitorSelfCheck(browser, target.origin, target.basePath);
 		throwIfViolations(violations);
 		console.log(`check-runtime-network: OK(3 route, base=${target.basePath || '/'})`);

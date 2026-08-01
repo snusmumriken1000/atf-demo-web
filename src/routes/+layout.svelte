@@ -6,9 +6,15 @@
 	import FaceSwitcher from '$lib/components/FaceSwitcher.svelte';
 	import { content } from '$lib/data/content';
 	import { onNavigate } from '$app/navigation';
+	import { asset } from '$app/paths';
+	import type { Asset } from '$app/types';
 	import { page } from '$app/state';
 
 	let { children } = $props();
+	// Vite が付けた hash は import URL から維持し、SvelteKit の asset APIで
+	// SSR時はページ相対、client時は configured base 配下へ解決する。
+	const bundledFontPath = fontUrl.slice(fontUrl.indexOf('/_app/')) as `/_app/${string}`;
+	const preloadFontUrl = asset(bundledFontPath as Asset);
 
 	// ページ間フェード(View Transitions API)。時間・イージングは global.css の
 	// ::view-transition-* が motion トークンを参照する。非対応ブラウザは即時遷移(段階的強化)。
@@ -26,7 +32,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<link rel="preload" as="font" type="font/woff2" crossorigin="anonymous" href={fontUrl} />
+	<link rel="preload" as="font" type="font/woff2" crossorigin="anonymous" href={preloadFontUrl} />
 </svelte:head>
 
 <a class="skip-link" href="#main">{content.site.navigation.skipToContent}</a>

@@ -1,9 +1,12 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	classifyRequestUrl,
+	DEPLOYMENT_BASE_PATH,
+	DEPLOYMENT_ORIGIN,
+	installRequestGuard,
 	normalizeBasePath,
 	parseTargetUrl,
 	routeToFile,
@@ -15,8 +18,8 @@ const origin = 'http://127.0.0.1:4173';
 
 describe('公開 URL 入力', () => {
 	it('末尾 slash を除いた origin と base path に分解する', () => {
-		expect(parseTargetUrl('https://example.com/atf-demo-web/')).toEqual({
-			origin: 'https://example.com',
+		expect(parseTargetUrl('https://snusmumriken1000.github.io/atf-demo-web/')).toEqual({
+			origin: DEPLOYMENT_ORIGIN,
 			basePath: '/atf-demo-web'
 		});
 	});
@@ -25,9 +28,43 @@ describe('公開 URL 入力', () => {
 		'https://user:secret@example.com/atf-demo-web/',
 		'https://example.com/atf-demo-web/?target=evil',
 		'https://example.com/atf-demo-web/#fragment',
+		'http://snusmumriken1000.github.io/atf-demo-web/',
+		'https://example.com/atf-demo-web/',
+		'https://snusmumriken1000.github.io/other-project/',
 		'file:///tmp/build/index.html'
 	])('危険または対象が曖昧な URL %s を拒否する', (url) => {
 		expect(() => parseTargetUrl(url)).toThrow();
+	});
+
+	it('redirect 先が公開 base 外なら送出前に abort する', async () => {
+		let handler: ((route: unknown) => Promise<void>) | undefined;
+		const page = {
+			route: async (_pattern: string, callback: (route: unknown) => Promise<void>) => {
+				handler = callback;
+			}
+		};
+		const abort = vi.fn();
+		const continueRequest = vi.fn();
+		const violations: Array<Record<string, string>> = [];
+		await installRequestGuard(
+			page,
+			'redirect',
+			DEPLOYMENT_ORIGIN,
+			DEPLOYMENT_BASE_PATH,
+			violations
+		);
+		await handler?.({
+			request: () => ({
+				url: () => `${DEPLOYMENT_ORIGIN}/outside/`,
+				method: () => 'GET',
+				resourceType: () => 'document'
+			}),
+			abort,
+			continue: continueRequest
+		});
+		expect(abort).toHaveBeenCalledWith('blockedbyclient');
+		expect(continueRequest).not.toHaveBeenCalled();
+		expect(violations).toHaveLength(1);
 	});
 
 	it.each(['/../private', '/atf-demo-web/', 'relative'])(

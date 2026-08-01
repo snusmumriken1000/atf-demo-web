@@ -30,7 +30,7 @@ const validBuild = {
 	'profile/index.html': page(links('#main', '../', '../showcase/'))
 };
 
-function runCheck(files: Record<string, string>) {
+function runCheck(files: Record<string, string>, basePath = '') {
 	const dir = mkdtempSync(join(tmpdir(), 'check-static-'));
 	tempDirs.push(dir);
 	mkdirSync(join(dir, 'build'));
@@ -40,7 +40,11 @@ function runCheck(files: Record<string, string>) {
 		mkdirSync(dirname(path), { recursive: true });
 		writeFileSync(path, content);
 	}
-	return spawnSync(process.execPath, [script], { cwd: dir, encoding: 'utf8' });
+	return spawnSync(process.execPath, [script], {
+		cwd: dir,
+		encoding: 'utf8',
+		env: { ...process.env, BASE_PATH: basePath }
+	});
 }
 
 describe('check-static.mjs', () => {
@@ -48,6 +52,34 @@ describe('check-static.mjs', () => {
 		const result = runCheck(validBuild);
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain('check-static: OK');
+	});
+
+	it('project base 配信で root 絶対の内部 asset を拒否する', () => {
+		const result = runCheck(
+			{
+				...validBuild,
+				'index.html': page(
+					`${links('./showcase/', './profile/')}<link rel="preload" as="font" href="/_app/font.woff2">`
+				)
+			},
+			'/atf-demo-web'
+		);
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain('base 外の絶対リソース参照');
+		expect(result.stderr).toContain('/_app/font.woff2');
+	});
+
+	it('project base 内の絶対 asset は許可する', () => {
+		const result = runCheck(
+			{
+				...validBuild,
+				'index.html': page(
+					`${links('./showcase/', './profile/')}<link rel="preload" as="font" href="/atf-demo-web/_app/font.woff2">`
+				)
+			},
+			'/atf-demo-web'
+		);
+		expect(result.status).toBe(0);
 	});
 
 	it('ページが欠けていると失敗する', () => {
