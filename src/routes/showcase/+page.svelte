@@ -50,10 +50,12 @@
 		</h2>
 		<ul>
 			{#each tiles as work, index (work.id)}
-				<li class="draw-step" data-draw-step={`work-${index + 1}`}>
+				<li class="draw-step" data-draw-kind="card" data-draw-step={`work-${index + 1}`}>
 					<!-- タイルから面 2 の該当作品詳細(/profile#work-{id})へ -->
-					<WorkTile {work} href={resolve('/profile') + '#work-' + work.id} />
-					<SketchStroke />
+					<div data-draw-content>
+						<WorkTile {work} href={resolve('/profile') + '#work-' + work.id} />
+					</div>
+					<SketchStroke kind="outline" />
 				</li>
 			{/each}
 		</ul>
@@ -152,5 +154,9 @@
 
 	li {
 		position: relative;
+	}
+
+	[data-draw-content] {
+		display: block;
 	}
 </style>

@@ -25,9 +25,7 @@ export const DRAWING_PHASES: readonly DrawingPhase[] = [
 	{ id: 'work-4', durationToken: '--motion-draw-card', fallbackDuration: 650, group: 'works' }
 ] as const;
 
-export const HAND_ENTRANCE_MS = 350;
-export const HAND_EXIT_MS = 250;
-export const CARD_OVERLAP_MS = 120;
+export const CARD_DRAW_REDUCTION_MS = 120;
 
 export function parseMotionTime(value: string, fallback: number): number {
 	const trimmed = value.trim();
@@ -44,6 +42,13 @@ export function resolveDrawingSchedule(styles: Pick<CSSStyleDeclaration, 'getPro
 }
 
 export function drawingDuration(phases = DRAWING_PHASES): number {
-	const phaseDuration = phases.reduce((sum, phase) => sum + phase.fallbackDuration, 0);
-	return HAND_ENTRANCE_MS + phaseDuration - CARD_OVERLAP_MS * 3 + HAND_EXIT_MS;
+	return phases.reduce(
+		(sum, phase) =>
+			sum +
+			Math.max(
+				0,
+				phase.fallbackDuration - (phase.id.startsWith('work-') ? CARD_DRAW_REDUCTION_MS : 0)
+			),
+		0
+	);
 }

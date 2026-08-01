@@ -79,7 +79,11 @@ h6 {
 }
 
 /* 手描き演出も既定は可視。attachment 起動後の active 状態だけ描画待ちにする。 */
-[data-drawing-state='active'] .draw-step:not(.drawn) {
+[data-drawing-state='active'] .draw-step:not([data-draw-kind='card']):not(.drawn) {
+	clip-path: inset(0 100% 0 0);
+}
+
+[data-drawing-state='active'] .draw-step[data-draw-kind='card']:not(.drawn) [data-draw-content] {
 	opacity: 0;
 }
 
