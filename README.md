@@ -9,7 +9,7 @@
 
 - [SvelteKit](https://svelte.dev/docs/kit)(Svelte 5)+ TypeScript
 - `@sveltejs/adapter-static` による完全静的出力(全ページ prerender)
-- ESLint / Prettier / Vitest
+- ESLint / Prettier / Vitest / Playwright
 
 ## 外部非依存の方針
 
@@ -36,9 +36,9 @@ URL を指定できる。フィールド構成そのものを変える場合だ�
 [`src/lib/data/content.types.ts`](src/lib/data/content.types.ts) も更新する。
 
 `npm run verify` は `https://` 以外の外部リンク、作品 ID の形式・重複、表示リストのキー重複も
-検出する。静的検査は外部リンク URL がクライアント JavaScript に複製されることを許容するため、
-その URL が JavaScript 内で通信に使われていないことまでは判別できない。この限界は Issue #11 の
-実行時ネットワーク監視で補完する。
+検出する。さらに Playwright Chromium で全 3 ルートを開き、遅延表示後までのネットワーク通信が
+配信元と同一オリジンまたは `data:` URI に限られることを実行時に確認する。外部リンクは監視中に
+クリックしない。
 
 ## 開発
 
@@ -46,21 +46,28 @@ Node.js 20.19 以上(推奨 22.12+)が必要(Vite 8 の engines 要件。`.npmrc
 
 ```sh
 npm install
+npx playwright install chromium # 初回と CI 環境でブラウザーを用意
 npm run dev        # 開発サーバー起動
 ```
 
 ## npm scripts
 
-| コマンド          | 内容                                                                                                                                            |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev`     | 開発サーバーを起動する                                                                                                                          |
-| `npm run build`   | 静的サイトを `build/` に出力する                                                                                                                |
-| `npm run preview` | ビルド結果をローカルで確認する                                                                                                                  |
-| `npm run check`   | svelte-check による型チェック                                                                                                                   |
-| `npm run lint`    | Prettier のフォーマット確認 + ESLint                                                                                                            |
-| `npm run format`  | Prettier で整形する                                                                                                                             |
-| `npm run test`    | Vitest を 1 回実行する(`test:unit` はウォッチモード)                                                                                            |
-| `npm run verify`  | lint / check / test / build に加え、ビルド成果物の静的検証(check-static: ページ存在・相互到達性・外部 URL 参照なし)をまとめて実行する(品質確認) |
+| コマンド                | 内容                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| `npm run dev`           | 開発サーバーを起動する                                                                      |
+| `npm run build`         | 静的サイトを `build/` に出力する                                                            |
+| `npm run preview`       | ビルド結果をローカルで確認する                                                              |
+| `npm run check`         | svelte-check による型チェック                                                               |
+| `npm run lint`          | Prettier のフォーマット確認 + ESLint                                                        |
+| `npm run format`        | Prettier で整形する                                                                         |
+| `npm run test`          | Vitest を 1 回実行する(`test:unit` はウォッチモード)                                        |
+| `npm run check:network` | 既存の `build/` をローカル配信し、Playwright で全ルートの実行時外部通信がないことを検証する |
+| `npm run verify`        | lint / check / test / build / 静的検証 / 実行時ネットワーク監視をまとめて実行する(品質確認) |
+
+`check:network` を単独実行する場合は、先に `npm run build` を実行する。CI では依存のインストール後に
+`npx playwright install chromium`、続いて `npm run verify` を実行する。ネットワーク監視は
+ナビゲーション 10 秒、フォント 3 秒、アニメーション 2 秒、最低観測 1 秒を含む通信静止待ち
+3 秒の有限な上限を持ち、ページや通信が停止しても無期限には待機しない。
 
 ## ディレクトリ
 
