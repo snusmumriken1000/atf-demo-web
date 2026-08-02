@@ -127,7 +127,7 @@ export function handDrawnSequence(): Attachment<HTMLElement> {
 							'--hand-x': `${position.x}px`,
 							'--hand-y': `${position.y}px`,
 							duration,
-							ease: 'inOutQuad'
+							ease: 'linear'
 						})
 					);
 				}
