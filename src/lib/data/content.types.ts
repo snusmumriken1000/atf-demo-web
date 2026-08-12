@@ -26,6 +26,12 @@ export type Work = {
 	featured?: boolean;
 	/** 詳細説明の段落(profile のみ表示) */
 	description?: string[];
+	/** 概要 / Context の段落(対象ユーザー・背景・課題。profile のみ表示) */
+	context?: string[];
+	/** アプローチ / Approach の段落(設計・実装・検証で行ったこと。profile のみ表示) */
+	approach?: string[];
+	/** 成果 / Outcome の段落(モック上の想定値を含む変化・成果。profile のみ表示) */
+	outcome?: string[];
 	/** 担当・役割 */
 	role?: string;
 	/** 使用技術 */
@@ -61,6 +67,12 @@ export type SkillGroup = {
 	items: SkillItem[];
 };
 
+/** 得意領域 1 件分(技術名の羅列ではなく、解決できる課題・仕事の進め方を書く) */
+export type ExpertiseItem = {
+	title: string;
+	description: string;
+};
+
 /** サイト全体のコンテンツ(表示文言)一式 */
 export type SiteContent = {
 	site: {
@@ -80,6 +92,8 @@ export type SiteContent = {
 			skipToContent: string;
 			scrollHint: string;
 		};
+		/** 掲載内容がモック / サンプルであることを明示する注記(profile のヘッダー直下に表示) */
+		mockNotice: string;
 	};
 	/** 名前とステートメント(showcase のヒーローと profile のヘッダーで共有) */
 	hero: {
@@ -90,24 +104,37 @@ export type SiteContent = {
 	};
 	/** 面 2(profile)の経歴・スキル */
 	profile: {
-		/** セクション見出し */
+		/** 2 大セクション(経歴・得意領域 / プロダクト・サービス・仕事)の見出しとリード文 */
+		sections: {
+			profile: { label: string; lead?: string };
+			work: { label: string; lead?: string };
+		};
+		/** 小セクション見出し */
 		sectionLabels: {
 			about: string;
 			career: string;
+			expertise: string;
 			skills: string;
-			works: string;
+			workingStyle: string;
 			links: string;
 		};
 		workMetaLabels: {
 			role: string;
 			period: string;
 			tech: string;
+			context: string;
+			approach: string;
+			outcome: string;
 		};
 		/** 自己紹介の段落 */
 		intro?: string[];
 		/** 経歴(書いた順 = 表示順。新しい順に書く) */
 		career: CareerEntry[];
+		/** 得意領域(2〜4 件を目安に書く) */
+		expertise: ExpertiseItem[];
 		skills: SkillGroup[];
+		/** 仕事のスタイル(3〜5 件を目安に書く) */
+		workingStyle: string[];
 		/** 外部リンク(GitHub 等) */
 		links?: WorkLink[];
 	};

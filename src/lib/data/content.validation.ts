@@ -38,6 +38,9 @@ export const validateContent = (content: SiteContent) => {
 			);
 		}
 		assertUnique(work.description ?? [], `works[${work.id}].description`);
+		assertUnique(work.context ?? [], `works[${work.id}].context`);
+		assertUnique(work.approach ?? [], `works[${work.id}].approach`);
+		assertUnique(work.outcome ?? [], `works[${work.id}].outcome`);
 		validateLinks(work.links, `works[${work.id}].links`);
 	}
 
@@ -45,6 +48,10 @@ export const validateContent = (content: SiteContent) => {
 	assertUnique(
 		content.profile.career.map((entry) => `${entry.period}-${entry.title}`),
 		'profile.career(period + title)'
+	);
+	assertUnique(
+		content.profile.expertise.map((item) => item.title),
+		'profile.expertise.title'
 	);
 	assertUnique(
 		content.profile.skills.map((group) => group.label),
@@ -56,5 +63,6 @@ export const validateContent = (content: SiteContent) => {
 			`profile.skills[${group.label}].items.name`
 		);
 	}
+	assertUnique(content.profile.workingStyle, 'profile.workingStyle');
 	validateLinks(content.profile.links, 'profile.links');
 };
