@@ -1,6 +1,6 @@
 <!--
-	面 2(情報整理の面)。自己紹介・経歴・スキル・作品詳細を読みやすい順に並べる。
-	表示文言は src/lib/data/content.ts が単一ソース。
+	面 2(情報整理の面)。「Profile — 経歴と得意領域」「Work — プロダクトと仕事」の
+	2 大セクションで構成する。表示文言は src/lib/data/content.ts が単一ソース。
 -->
 <script lang="ts">
 	import { content } from '$lib/data/content';
@@ -18,66 +18,105 @@
 		<p class="eyebrow">{site.faces.profile.label}</p>
 		<h1>{hero.name}</h1>
 		<p class="statement">{hero.statement.replace('\n', ' ')}</p>
+		<p class="mock-notice">{site.mockNotice}</p>
 	</header>
 
 	<div class="content">
-		<section class="about" aria-labelledby="about-heading">
-			<h2 id="about-heading">{profile.sectionLabels.about}</h2>
-			<div class="prose">
-				{#each profile.intro ?? [] as paragraph (paragraph)}
-					<p>{paragraph}</p>
-				{/each}
-			</div>
+		<!-- 大セクション 1: 経歴と得意領域 -->
+		<section class="major" aria-labelledby="section-profile-heading">
+			<header class="major-header">
+				<h2 id="section-profile-heading">{profile.sections.profile.label}</h2>
+				{#if profile.sections.profile.lead}
+					<p class="major-lead">{profile.sections.profile.lead}</p>
+				{/if}
+			</header>
 
-			{#if profile.links?.length}
-				<nav class="profile-links" aria-label={profile.sectionLabels.links}>
-					{#each profile.links as link (link.url)}
-						<!-- 外部 URL は resolve の対象外 -->
-						<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-						<a href={link.url} rel="me">{link.label}<span aria-hidden="true"> ↗</span></a>
+			<section class="minor about" aria-labelledby="about-heading">
+				<h3 id="about-heading">{profile.sectionLabels.about}</h3>
+				<div class="prose">
+					{#each profile.intro ?? [] as paragraph (paragraph)}
+						<p>{paragraph}</p>
 					{/each}
-				</nav>
-			{/if}
-		</section>
 
-		<section aria-labelledby="career-heading">
-			<h2 id="career-heading">{profile.sectionLabels.career}</h2>
-			<ol class="career-list">
-				{#each profile.career as entry (`${entry.period}-${entry.title}`)}
-					<li>
-						<p class="period">{entry.period}</p>
-						<div>
-							<h3>{entry.title}</h3>
-							{#if entry.org}<p class="org">{entry.org}</p>{/if}
-							{#if entry.summary}<p class="summary">{entry.summary}</p>{/if}
-						</div>
-					</li>
-				{/each}
-			</ol>
-		</section>
-
-		<section aria-labelledby="skills-heading">
-			<h2 id="skills-heading">{profile.sectionLabels.skills}</h2>
-			<div class="skill-groups">
-				{#each profile.skills as group, index (group.label)}
-					{@const headingId = `skill-group-${index + 1}`}
-					<section class="skill-group" aria-labelledby={headingId}>
-						<h3 id={headingId}>{group.label}</h3>
-						<ul>
-							{#each group.items as skill (skill.name)}
-								<li>
-									<span>{skill.name}</span>
-									{#if skill.note}<small>{skill.note}</small>{/if}
-								</li>
+					{#if profile.links?.length}
+						<nav class="profile-links" aria-label={profile.sectionLabels.links}>
+							{#each profile.links as link (link.url)}
+								<!-- 外部 URL は resolve の対象外 -->
+								<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+								<a href={link.url} rel="me">{link.label}<span aria-hidden="true"> ↗</span></a>
 							{/each}
-						</ul>
-					</section>
-				{/each}
-			</div>
+						</nav>
+					{/if}
+				</div>
+			</section>
+
+			<section class="minor" aria-labelledby="career-heading">
+				<h3 id="career-heading">{profile.sectionLabels.career}</h3>
+				<ol class="career-list">
+					{#each profile.career as entry (`${entry.period}-${entry.title}`)}
+						<li>
+							<p class="period">{entry.period}</p>
+							<div>
+								<h4>{entry.title}</h4>
+								{#if entry.org}<p class="org">{entry.org}</p>{/if}
+								{#if entry.summary}<p class="summary">{entry.summary}</p>{/if}
+							</div>
+						</li>
+					{/each}
+				</ol>
+			</section>
+
+			<section class="minor" aria-labelledby="expertise-heading">
+				<h3 id="expertise-heading">{profile.sectionLabels.expertise}</h3>
+				<div class="expertise-list">
+					{#each profile.expertise as item (item.title)}
+						<div class="expertise-item">
+							<h4>{item.title}</h4>
+							<p>{item.description}</p>
+						</div>
+					{/each}
+				</div>
+			</section>
+
+			<section class="minor" aria-labelledby="skills-heading">
+				<h3 id="skills-heading">{profile.sectionLabels.skills}</h3>
+				<div class="skill-groups">
+					{#each profile.skills as group, index (group.label)}
+						{@const headingId = `skill-group-${index + 1}`}
+						<section class="skill-group" aria-labelledby={headingId}>
+							<h4 id={headingId}>{group.label}</h4>
+							<ul>
+								{#each group.items as skill (skill.name)}
+									<li>
+										<span>{skill.name}</span>
+										{#if skill.note}<small>{skill.note}</small>{/if}
+									</li>
+								{/each}
+							</ul>
+						</section>
+					{/each}
+				</div>
+			</section>
+
+			<section class="minor" aria-labelledby="working-style-heading">
+				<h3 id="working-style-heading">{profile.sectionLabels.workingStyle}</h3>
+				<ul class="working-style-list">
+					{#each profile.workingStyle as item (item)}
+						<li>{item}</li>
+					{/each}
+				</ul>
+			</section>
 		</section>
 
-		<section aria-labelledby="works-heading">
-			<h2 id="works-heading">{profile.sectionLabels.works}</h2>
+		<!-- 大セクション 2: プロダクトと仕事 -->
+		<section class="major" aria-labelledby="section-work-heading">
+			<header class="major-header">
+				<h2 id="section-work-heading">{profile.sections.work.label}</h2>
+				{#if profile.sections.work.lead}
+					<p class="major-lead">{profile.sections.work.lead}</p>
+				{/if}
+			</header>
+
 			<div class="work-list">
 				{#each works as work, index (work.id)}
 					<article class="work" id={'work-' + work.id}>
@@ -88,34 +127,47 @@
 								<p class="blurb">{work.blurb}</p>
 							</header>
 
-							{#if work.role || work.period || work.tech?.length}
-								<dl>
-									{#if work.role}
-										<div>
-											<dt>{profile.workMetaLabels.role}</dt>
-											<dd>{work.role}</dd>
-										</div>
-									{/if}
-									{#if work.period}
-										<div>
-											<dt>{profile.workMetaLabels.period}</dt>
-											<dd>{work.period}</dd>
-										</div>
-									{/if}
-									{#if work.tech?.length}
-										<div>
-											<dt>{profile.workMetaLabels.tech}</dt>
-											<dd>{work.tech.join(' / ')}</dd>
-										</div>
-									{/if}
-								</dl>
-							{/if}
+							<dl>
+								<div>
+									<dt>{profile.workMetaLabels.role}</dt>
+									<dd>{work.role}</dd>
+								</div>
+								<div>
+									<dt>{profile.workMetaLabels.period}</dt>
+									<dd>{work.period}</dd>
+								</div>
+								<div>
+									<dt>{profile.workMetaLabels.tech}</dt>
+									<dd>{work.tech.join(' / ')}</dd>
+								</div>
+							</dl>
 
 							{#if work.description?.length}
 								<div class="prose">
 									{#each work.description as paragraph (paragraph)}<p>{paragraph}</p>{/each}
 								</div>
 							{/if}
+
+							<section class="work-detail" aria-label={profile.workMetaLabels.context}>
+								<h4>{profile.workMetaLabels.context}</h4>
+								<div class="prose">
+									{#each work.context as paragraph (paragraph)}<p>{paragraph}</p>{/each}
+								</div>
+							</section>
+
+							<section class="work-detail" aria-label={profile.workMetaLabels.approach}>
+								<h4>{profile.workMetaLabels.approach}</h4>
+								<div class="prose">
+									{#each work.approach as paragraph (paragraph)}<p>{paragraph}</p>{/each}
+								</div>
+							</section>
+
+							<section class="work-detail" aria-label={profile.workMetaLabels.outcome}>
+								<h4>{profile.workMetaLabels.outcome}</h4>
+								<div class="prose">
+									{#each work.outcome as paragraph (paragraph)}<p>{paragraph}</p>{/each}
+								</div>
+							</section>
 
 							{#if work.links?.length}
 								<nav class="work-links" aria-label={`${work.title} ${profile.sectionLabels.links}`}>
@@ -170,21 +222,53 @@
 		font-size: var(--text-lg);
 	}
 
-	.content > section {
+	.mock-notice {
+		margin-top: var(--space-5);
+		max-width: 44rem;
+		color: var(--color-fg-muted);
+		font-size: var(--text-sm);
+	}
+
+	/* ---- 大セクション(2 大セクションの区切り) ---- */
+	.major + .major {
+		border-top: 1px solid color-mix(in srgb, var(--color-fg-muted) 25%, transparent);
+	}
+
+	.major-header {
+		padding-top: clamp(4rem, 10vw, 7rem);
+	}
+
+	h2 {
+		font-size: clamp(var(--text-2xl), 5vw, var(--text-3xl));
+		line-height: var(--leading-tight);
+		letter-spacing: -0.02em;
+	}
+
+	.major-lead {
+		margin-top: var(--space-4);
+		max-width: 40rem;
+		color: var(--color-fg-muted);
+	}
+
+	/* ---- 小セクション(2 カラムグリッド) ---- */
+	.minor {
 		display: grid;
 		grid-template-columns: minmax(8rem, 1fr) minmax(0, 3fr);
 		gap: var(--space-8);
 		padding: clamp(3rem, 7vw, 5rem) 0;
-		border-bottom: 1px solid color-mix(in srgb, var(--color-fg-muted) 25%, transparent);
 		scroll-margin-top: 5rem;
 	}
 
-	h2 {
+	.minor + .minor {
+		border-top: 1px solid color-mix(in srgb, var(--color-fg-muted) 25%, transparent);
+	}
+
+	h3 {
 		font-size: var(--text-lg);
 		line-height: var(--leading-tight);
 	}
 
-	h3 {
+	h4 {
 		font-size: var(--text-xl);
 		line-height: var(--leading-tight);
 	}
@@ -216,7 +300,8 @@
 	}
 
 	.career-list,
-	.skill-group ul {
+	.skill-group ul,
+	.working-style-list {
 		padding: 0;
 		list-style: none;
 	}
@@ -241,6 +326,16 @@
 		max-width: 36rem;
 	}
 
+	.expertise-list {
+		display: grid;
+		gap: var(--space-6);
+	}
+
+	.expertise-item p {
+		margin-top: var(--space-3);
+		max-width: 40rem;
+	}
+
 	.skill-groups {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -253,7 +348,7 @@
 		border-radius: var(--space-2);
 	}
 
-	.skill-group h3 {
+	.skill-group h4 {
 		font-size: var(--text-base);
 	}
 
@@ -271,6 +366,31 @@
 		font-size: var(--text-sm);
 	}
 
+	.working-style-list {
+		max-width: 44rem;
+	}
+
+	.working-style-list li {
+		padding-left: var(--space-5);
+		position: relative;
+	}
+
+	.working-style-list li::before {
+		content: '—';
+		position: absolute;
+		left: 0;
+		color: var(--color-fg-muted);
+	}
+
+	.working-style-list li + li {
+		margin-top: var(--space-4);
+	}
+
+	/* ---- 作品詳細 ---- */
+	.work-list {
+		padding: clamp(3rem, 7vw, 5rem) 0;
+	}
+
 	.work {
 		display: grid;
 		grid-template-columns: 3rem minmax(0, 1fr);
@@ -282,6 +402,10 @@
 		margin-top: clamp(3rem, 7vw, 5rem);
 		padding-top: clamp(3rem, 7vw, 5rem);
 		border-top: 1px solid color-mix(in srgb, var(--color-fg-muted) 25%, transparent);
+	}
+
+	.work h3 {
+		font-size: var(--text-xl);
 	}
 
 	.blurb {
@@ -306,8 +430,23 @@
 		margin: var(--space-1) 0 0;
 	}
 
+	.work-detail {
+		margin-top: var(--space-6);
+	}
+
+	.work-detail h4 {
+		font-size: var(--text-sm);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--color-fg-muted);
+	}
+
+	.work-detail .prose {
+		margin-top: var(--space-3);
+	}
+
 	@media (max-width: 44rem) {
-		.content > section {
+		.minor {
 			grid-template-columns: 1fr;
 			gap: var(--space-5);
 		}

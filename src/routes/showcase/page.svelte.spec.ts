@@ -4,6 +4,11 @@ import { content } from '$lib/data/content';
 import Page from './+page.svelte';
 
 describe('showcase ページ(/showcase)', () => {
+	it('架空のモックコンテンツである旨を表示する', () => {
+		render(Page);
+		expect(screen.getByText(content.site.mockNotice)).toBeInTheDocument();
+	});
+
 	it('ステートメント(h1)が描画される', () => {
 		render(Page);
 
@@ -16,10 +21,17 @@ describe('showcase ページ(/showcase)', () => {
 		const tiles = container.querySelectorAll('.works li');
 		const featuredCount = content.works.filter((work) => work.featured).length;
 		expect(tiles).toHaveLength(Math.min(featuredCount || content.works.length, 4));
-		expect(screen.getByRole('link', { name: /Two-Faced Portfolio/ })).toHaveAttribute(
-			'href',
-			'/profile#work-two-faced-portfolio'
+		const expected = (
+			featuredCount ? content.works.filter((work) => work.featured) : content.works
+		).slice(0, 4);
+		expect([...tiles].map((tile) => tile.querySelector('h3')?.textContent)).toEqual(
+			expected.map((work) => work.title)
 		);
+		for (const work of expected) {
+			const link = screen.getByRole('link', { name: new RegExp(work.title) });
+			expect(link).toHaveAttribute('href', `/profile#work-${work.id}`);
+			expect(link).toHaveTextContent(work.blurb);
+		}
 	});
 
 	it('初期マークアップのタイルは hidden クラス(fade-pending)を持たない', () => {

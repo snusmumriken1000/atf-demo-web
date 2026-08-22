@@ -3,7 +3,18 @@ import { render, screen } from '@testing-library/svelte';
 import type { Work } from '$lib/data/content.types';
 import WorkTile from './WorkTile.svelte';
 
-const work: Work = { id: 'sample-work', title: 'Sample Work', blurb: '一行説明', hue: 200 };
+const work: Work = {
+	id: 'sample-work',
+	title: 'Sample Work',
+	blurb: '一行説明',
+	hue: 200,
+	role: '担当',
+	tech: ['Svelte'],
+	period: '2026',
+	context: ['背景'],
+	approach: ['方法'],
+	outcome: ['成果']
+};
 
 describe('WorkTile', () => {
 	it('image 省略時は装飾扱いのプレースホルダビジュアルを出す', () => {

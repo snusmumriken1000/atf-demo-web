@@ -6,9 +6,9 @@
  *
  * 【編集のしかた】
  * - 引用符 '...' の中の文字を書き換えてください
- * - 任意の項目(intro / links / role / tech / period / description /
- *   org / summary / note / featured)は、不要なら行ごと削除できます
- * - 経歴・スキル・作品を増減するときは、{ ... }, のかたまりごと
+ * - 任意の項目(intro / links / description / org / summary / note / featured)は、
+ *   不要なら行ごと削除できます
+ * - 経歴・得意領域・スキル・作品を増減するときは、{ ... }, のかたまりごと
  *   コピー / 削除してください(並び順 = 表示順)
  * - 画像などのアセットに外部 URL は使えません(リポジトリに同梱する方針)。
  *   外部サイトへのリンク(links の url)は https:// で書けます
@@ -17,7 +17,8 @@
  * - npm run check  … 書き間違い(必須項目の消し忘れ等)を行番号付きで検出
  * - npm run verify … サイト全体の検証を一括実行
  *
- * ※ 現在の内容はサンプルです。実際の文言に差し替えてください。
+ * ※ 現在の内容はすべて架空のモックです。人物・組織・プロダクト・成果の
+ *   数値は実在のものではありません。実際の文言に差し替えてください。
  */
 import type { SiteContent } from './content.types';
 import { validateContent } from './content.validation';
@@ -34,7 +35,7 @@ export const content: SiteContent = {
 			},
 			profile: {
 				label: 'Profile',
-				lead: '経歴・スキル・作品を落ち着いて読める面。'
+				lead: '経歴・得意領域と、手がけたプロダクト・仕事を落ち着いて読める面。'
 			}
 		},
 		navigation: {
@@ -43,7 +44,9 @@ export const content: SiteContent = {
 			entryLabel: '面の選択',
 			skipToContent: '本文へスキップ',
 			scrollHint: 'Scroll ↓'
-		}
+		},
+		mockNotice:
+			'このページの内容はサンプル(モック)です。人物・組織・プロダクト・成果の数値はすべて架空で、実績を示すものではありません。'
 	},
 
 	// ---- 名前とステートメント(showcase のヒーロー / profile のヘッダー) ----
@@ -53,43 +56,76 @@ export const content: SiteContent = {
 		worksLabel: 'Works'
 	},
 
-	// ---- 面 2(profile)の自己紹介・経歴・スキル ----
+	// ---- 面 2(profile)の 2 大セクション ----
 	profile: {
+		// 2 大セクションの見出しとリード文
+		sections: {
+			profile: {
+				label: 'Profile — 経歴と得意領域',
+				lead: '誰で、どんな課題を解決できるか。経歴・得意領域・スキル・仕事のスタイルをまとめています。'
+			},
+			work: {
+				label: 'Work — プロダクトと仕事',
+				lead: '何を作り、どのように仕事をしたか。背景・担当・アプローチ・成果を作品ごとにまとめています。'
+			}
+		},
 		sectionLabels: {
 			about: 'About',
 			career: '経歴',
+			expertise: '得意領域',
 			skills: 'スキル',
-			works: '作品',
+			workingStyle: '仕事のスタイル',
 			links: 'リンク'
 		},
 		workMetaLabels: {
 			role: 'Role',
 			period: 'Year',
-			tech: 'Stack'
+			tech: 'Stack',
+			context: '概要 / Context',
+			approach: 'アプローチ / Approach',
+			outcome: '成果 / Outcome'
 		},
 		intro: [
-			'Web フロントエンドを中心に、設計から実装・検証までを一貫して担当しているエンジニアです。',
-			'派手さよりも、静かに長く使えるものを丁寧につくることを大切にしています。'
+			'プロダクト志向のフロントエンドエンジニアです。画面を「作って終わり」にせず、使う人の課題が解決されるところまでを仕事の範囲と考えています。',
+			'デザインシステムの構築、アクセシビリティ対応、性能・品質改善を得意とし、設計から実装・検証までを一貫して担当してきました。'
 		],
 		career: [
 			{
 				period: '2022 — 現在',
 				title: 'フロントエンドエンジニア',
-				org: 'Example Inc.',
+				org: 'ミナモ製作所(架空)',
 				summary:
-					'自社サービスの Web フロントエンドを設計から実装まで担当。デザインシステムの整備を主導。'
+					'BtoB SaaS のフロントエンドを設計から実装まで担当。デザインシステムの立ち上げを主導し、複数プロダクトでの UI 共通化とアクセシビリティ基準の整備を進めた。'
 			},
 			{
 				period: '2019 — 2022',
 				title: 'Web エンジニア',
-				org: 'Sample Studio',
-				summary: '受託開発で中小規模の Web サイト構築を多数担当。'
+				org: 'コトリデザイン事務所(架空)',
+				summary:
+					'受託開発で中小規模の Web サイト・Web アプリ構築を多数担当。表示速度の改善と CMS 導入によるお客様自身での更新体制づくりを得意とした。'
 			},
 			{
 				// org / summary を省いた最小の書き方の例
 				period: '2015 — 2019',
 				title: '情報工学専攻(学士)',
-				org: 'サンプル大学'
+				org: 'サンプル工科大学(架空)'
+			}
+		],
+		expertise: [
+			{
+				title: 'デザインシステム構築',
+				description:
+					'散らばった UI を棚卸しして、トークン・コンポーネント・ドキュメントの 3 点で整備します。デザイナーと実装者が同じ語彙で話せる状態をゴールにしています。'
+			},
+			{
+				title: 'アクセシビリティ対応',
+				description:
+					'見出し構造・キーボード操作・スクリーンリーダー対応を実装の初期段階から組み込みます。後付けの修正ではなく、チェックリストと自動テストで継続できる形にします。'
+			},
+			{
+				title: '性能・品質改善',
+				description:
+					'計測に基づいて表示速度とバンドルサイズを改善します。改善そのものよりも、退行を検知できる仕組み(CI の予算チェックや検証スクリプト)を残すことを重視しています。'
 			}
 		],
 		skills: [
@@ -110,11 +146,79 @@ export const content: SiteContent = {
 				items: [{ name: 'Figma', note: '実装者としての利用が中心' }]
 			}
 		],
-		links: [{ label: 'GitHub', url: 'https://github.com/example' }]
+		workingStyle: [
+			'着手前に「誰の・どんな課題を解くのか」を一文で書き、迷ったらそこに立ち返る',
+			'設計・実装・検証を分断せず、動くものを小さく出してフィードバックを早く得る',
+			'アクセシビリティと性能は後付けにせず、最初のマイルストーンから受け入れ条件に含める',
+			'ドキュメントは「次の人が同じ判断をできるか」を基準に、決定の理由まで残す'
+		],
+		links: [{ label: 'GitHub', url: 'https://github.com/snusmumriken1000/atf-demo-web' }]
 	},
 
 	// ---- 作品一覧(showcase のタイルと profile の詳細で共有) ----
 	works: [
+		{
+			id: 'yoyaku-board',
+			title: 'Yoyaku Board',
+			blurb: '地域の小規模事業者向け予約管理サービス(架空)',
+			hue: 200,
+			featured: true,
+			role: 'フロントエンド設計・実装(エンジニア 3 名・デザイナー 1 名のチーム)',
+			tech: ['SvelteKit', 'TypeScript', 'PWA'],
+			period: '2024 — 2025',
+			context: [
+				'美容室や整体院など、専任の IT 担当がいない地域の小規模事業者向けの予約管理サービス(架空)。電話とノートで管理していた予約をオンライン化し、ダブルブッキングと電話対応の負担を減らすことが課題だった。'
+			],
+			approach: [
+				'管理画面は「今日の予定が 3 秒でわかる」ことを最優先に情報設計し、予約一覧・空き枠・顧客メモを 1 画面に集約した。',
+				'店頭のタブレットでも使えるよう PWA として実装し、通信が不安定な環境向けにオフライン時の予約閲覧をサポートした。'
+			],
+			outcome: [
+				'導入店舗の電話予約対応時間が月あたり約 12 時間削減、予約の記入漏れ起因のトラブルがほぼゼロに(モック上の想定値)。',
+				'初期設定を 15 分で終えられるオンボーディングにより、IT 担当のいない店舗でも自力で運用を開始できた(モック上の想定値)。'
+			]
+		},
+		{
+			id: 'support-deck',
+			title: 'Support Deck',
+			blurb: 'カスタマーサポート向け業務ダッシュボード(架空)',
+			hue: 265,
+			featured: true,
+			role: 'フロントエンドリード(実装のほか、UI 品質基準の策定を担当)',
+			tech: ['Svelte', 'TypeScript', 'WebSocket'],
+			period: '2023 — 2024',
+			context: [
+				'カスタマーサポートチーム向けの業務ダッシュボード(架空)。複数チャネルの問い合わせが別々のツールに分かれ、対応状況の把握と引き継ぎに時間がかかっていることが課題だった。'
+			],
+			approach: [
+				'問い合わせの状態遷移を整理し、「自分が今やるべき対応」だけが並ぶ受信箱ビューを中心に据えた。',
+				'キーボードだけで一連の対応が完結する操作体系にし、スクリーンリーダーでの読み上げ順もあわせて検証。長時間の利用を想定してコントラストと文字サイズの基準を先に決めてから実装した。'
+			],
+			outcome: [
+				'1 件あたりの平均対応時間が約 2 割短縮、シフト交代時の引き継ぎ漏れが月 10 件前後からほぼゼロに(モック上の想定値)。',
+				'策定した UI 品質基準はチームの他プロダクトにも展開された(モック上の想定)。'
+			]
+		},
+		{
+			id: 'quiet-components',
+			title: 'Quiet Components',
+			blurb: 'ダーク基調のミニマルな UI コンポーネント / デザインシステム',
+			hue: 160,
+			featured: true,
+			role: 'デザイン・実装(個人プロジェクト)',
+			tech: ['Svelte', 'CSS', 'Vitest'],
+			period: '2025 — 現在',
+			context: [
+				'装飾を線と余白だけに絞った、ダークテーマ前提の UI コンポーネント集。プロジェクトごとに UI を作り直すのではなく、自分の定番として育てられる小さなデザインシステムを目指している。'
+			],
+			approach: [
+				'色・余白・文字サイズをデザイントークンとして先に定義し、コンポーネントはトークンだけを参照して実装。',
+				'各コンポーネントにキーボード操作と ARIA 属性のテストを付け、見た目のミニマルさとアクセシビリティを両立させた。'
+			],
+			outcome: [
+				'このポートフォリオを含む手元のプロジェクト 3 件で再利用し、新規画面の立ち上げにかかる時間を大きく短縮できた(モック上の想定値)。'
+			]
+		},
 		{
 			id: 'two-faced-portfolio',
 			title: 'Two-Faced Portfolio',
@@ -125,41 +229,19 @@ export const content: SiteContent = {
 			tech: ['SvelteKit', 'TypeScript'],
 			period: '2026',
 			description: [
-				'ビジュアル特化の面と情報整理の面という 2 つの顔をもつ、静的出力のポートフォリオサイト。',
-				'外部リソースを一切読み込まない自己完結の構成で、文言はすべて単一のコンテンツファイルから差し替えられる。'
+				'ビジュアル特化の面と情報整理の面という 2 つの顔をもつ、静的出力のポートフォリオサイト。'
 			],
-			links: [{ label: 'GitHub', url: 'https://github.com/example/two-faced-portfolio' }]
-		},
-		{
-			id: 'quiet-components',
-			title: 'Quiet Components',
-			blurb: 'ダーク基調のミニマルな UI コンポーネント試作',
-			hue: 265,
-			featured: true,
-			role: 'デザイン・実装',
-			tech: ['Svelte', 'CSS'],
-			period: '2025',
-			description: ['装飾を線と余白だけに絞った、ダークテーマ前提の UI コンポーネント集の試作。']
-		},
-		{
-			id: 'static-guardrail',
-			title: 'Static Guardrail',
-			blurb: '外部参照を検出する静的サイト検証スクリプト',
-			hue: 160,
-			featured: true,
-			tech: ['Node.js'],
-			period: '2025',
-			description: [
-				'ビルド成果物を走査して外部 URL 参照を default-deny で検出する、依存ゼロの検証スクリプト。'
-			]
-		},
-		{
-			// 必須項目(id / title / blurb / hue)だけの最小の書き方の例
-			id: 'type-playground',
-			title: 'Type Playground',
-			blurb: 'タイポグラフィとモーションの実験場',
-			hue: 20,
-			featured: true
+			context: [
+				'「ずっと見ていたくなる面」と「落ち着いて読める面」を 1 つのサイトに共存させたい、という自分自身の要望が出発点。外部リソースに依存しない自己完結な構成が制約条件。'
+			],
+			approach: [
+				'表示文言を単一のコンテンツファイルに集約し、1 ファイルの編集だけでサイト全体へ反映される構造にした。',
+				'ビルド成果物を走査して外部 URL 参照を検出する静的検証と、実行時のネットワークアクセス検証を CI に組み込み、自己完結の制約を仕組みで守っている。'
+			],
+			outcome: [
+				'外部リソース読み込みゼロを検証付きで維持したまま、2 つの面と単一コンテンツファイルによる更新フローを実現した。'
+			],
+			links: [{ label: 'GitHub', url: 'https://github.com/snusmumriken1000/atf-demo-web' }]
 		}
 	]
 };
