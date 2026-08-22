@@ -38,6 +38,7 @@
 			{/each}
 		</h1>
 		<p class="lead draw-step" data-draw-step="lead">{site.faces.showcase.lead}<SketchStroke /></p>
+		<p class="mock-notice">{site.mockNotice}</p>
 		<!-- 下の作品バンドへのスクロール示唆(装飾のみ) -->
 		<p class="hint draw-step" data-draw-step="hint" aria-hidden="true">
 			{site.navigation.scrollHint}<SketchStroke />
@@ -117,6 +118,12 @@
 	.lead {
 		max-width: 32rem;
 		color: var(--color-fg-muted);
+	}
+
+	.mock-notice {
+		max-width: 44rem;
+		color: var(--color-fg-muted);
+		font-size: var(--text-sm);
 	}
 
 	.hint {

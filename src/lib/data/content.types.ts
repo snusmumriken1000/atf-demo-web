@@ -27,17 +27,17 @@ export type Work = {
 	/** 詳細説明の段落(profile のみ表示) */
 	description?: string[];
 	/** 概要 / Context の段落(対象ユーザー・背景・課題。profile のみ表示) */
-	context?: string[];
+	context: string[];
 	/** アプローチ / Approach の段落(設計・実装・検証で行ったこと。profile のみ表示) */
-	approach?: string[];
+	approach: string[];
 	/** 成果 / Outcome の段落(モック上の想定値を含む変化・成果。profile のみ表示) */
-	outcome?: string[];
+	outcome: string[];
 	/** 担当・役割 */
-	role?: string;
+	role: string;
 	/** 使用技術 */
-	tech?: string[];
+	tech: string[];
 	/** 制作時期(表示用の文字列。「2026」「2025 — 現在」など形式は自由) */
-	period?: string;
+	period: string;
 	/** 作品の外部リンク(リポジトリ・デモ等) */
 	links?: WorkLink[];
 };

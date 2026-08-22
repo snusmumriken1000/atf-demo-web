@@ -6,8 +6,7 @@
  *
  * 【編集のしかた】
  * - 引用符 '...' の中の文字を書き換えてください
- * - 任意の項目(intro / links / role / tech / period / description /
- *   context / approach / outcome / org / summary / note / featured)は、
+ * - 任意の項目(intro / links / description / org / summary / note / featured)は、
  *   不要なら行ごと削除できます
  * - 経歴・得意領域・スキル・作品を増減するときは、{ ... }, のかたまりごと
  *   コピー / 削除してください(並び順 = 表示順)

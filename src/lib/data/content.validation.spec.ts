@@ -46,12 +46,48 @@ const minimalContent = (): SiteContent => ({
 		skills: [],
 		workingStyle: []
 	},
-	works: [{ id: 'valid-id', title: 'Work', blurb: 'Blurb', hue: 0 }]
+	works: [
+		{
+			id: 'valid-id',
+			title: 'Work',
+			blurb: 'Blurb',
+			hue: 0,
+			role: 'Developer',
+			tech: ['Svelte'],
+			period: '2026',
+			context: ['Context'],
+			approach: ['Approach'],
+			outcome: ['Outcome']
+		}
+	]
 });
 
 describe('validateContent', () => {
-	it('任意フィールドを省略した最小コンテンツを許容する', () => {
+	it('必須フィールドを備えた最小コンテンツを許容する', () => {
 		expect(() => validateContent(minimalContent())).not.toThrow();
+	});
+
+	it.each(['role', 'period'] as const)('作品の %s の空文字を拒否する', (field) => {
+		const candidate = minimalContent();
+		candidate.works[0][field] = '   ';
+		expect(() => validateContent(candidate)).toThrow(new RegExp(`works\\[valid-id\\]\\.${field}`));
+	});
+
+	it.each(['tech', 'context', 'approach', 'outcome'] as const)(
+		'作品の %s の空配列を拒否する',
+		(field) => {
+			const candidate = minimalContent();
+			candidate.works[0][field] = [];
+			expect(() => validateContent(candidate)).toThrow(
+				new RegExp(`works\\[valid-id\\]\\.${field}`)
+			);
+		}
+	);
+
+	it.each([-1, 361, Number.NaN])('範囲外の hue「%s」を拒否する', (hue) => {
+		const candidate = minimalContent();
+		candidate.works[0].hue = hue;
+		expect(() => validateContent(candidate)).toThrow(/works\[valid-id\]\.hue/);
 	});
 
 	it.each(['Invalid_ID', 'space id', '日本語'])('不正な作品 id「%s」を拒否する', (id) => {

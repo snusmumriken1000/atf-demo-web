@@ -42,7 +42,23 @@ describe('profile ページ(/profile)', () => {
 		}
 	});
 
-	it('作品の Context / Approach / Outcome をフィールドがあるときだけ見出し付きで表示する', () => {
+	it('全作品のタイトル・概要・順序・共有アンカーを content.ts と一致させる', () => {
+		const { container } = render(Page);
+		const details = [...container.querySelectorAll<HTMLElement>('.work-list > .work')];
+
+		expect(details).toHaveLength(content.works.length);
+		expect(details.map((detail) => detail.id)).toEqual(
+			content.works.map((work) => `work-${work.id}`)
+		);
+		for (const [index, work] of content.works.entries()) {
+			expect(within(details[index]).getByRole('heading', { level: 3 })).toHaveTextContent(
+				work.title
+			);
+			expect(within(details[index]).getByText(work.blurb)).toBeInTheDocument();
+		}
+	});
+
+	it('全作品の Context / Approach / Outcome を見出し付きで表示する', () => {
 		render(Page);
 
 		const { workMetaLabels } = content.profile;
@@ -53,12 +69,9 @@ describe('profile ページ(/profile)', () => {
 				['approach', workMetaLabels.approach],
 				['outcome', workMetaLabels.outcome]
 			] as const) {
-				const heading = within(detail).queryByRole('heading', { level: 4, name: label });
-				if (work[field]?.length) {
-					expect(heading).toBeInTheDocument();
-				} else {
-					expect(heading).not.toBeInTheDocument();
-				}
+				const heading = within(detail).getByRole('heading', { level: 4, name: label });
+				expect(heading).toBeInTheDocument();
+				expect(within(detail).getByText(work[field][0])).toBeInTheDocument();
 			}
 		}
 	});
@@ -93,7 +106,7 @@ describe('profile ページ(/profile)', () => {
 		}
 	});
 
-	it('任意フィールドをすべて省略しても必須情報を表示できる', () => {
+	it('任意のプロフィール・作品リンクと説明を省略しても必須情報を表示できる', () => {
 		const originalProfile = content.profile;
 		const originalWorks = content.works;
 
@@ -106,7 +119,20 @@ describe('profile ページ(/profile)', () => {
 			skills: [{ label: 'テスト分類', items: [{ name: 'テストスキル' }] }],
 			workingStyle: ['テストスタイル']
 		};
-		content.works = [{ id: 'minimal-work', title: '最小作品', blurb: '必須項目のみ', hue: 0 }];
+		content.works = [
+			{
+				id: 'minimal-work',
+				title: '最小作品',
+				blurb: '必須項目のみ',
+				hue: 0,
+				role: '担当',
+				tech: ['Svelte'],
+				period: '2026',
+				context: ['背景'],
+				approach: ['方法'],
+				outcome: ['成果']
+			}
+		];
 
 		try {
 			render(Page);
@@ -117,8 +143,8 @@ describe('profile ページ(/profile)', () => {
 			expect(screen.getByText('テストスタイル')).toBeInTheDocument();
 			expect(screen.getByRole('heading', { name: '最小作品' })).toBeInTheDocument();
 			expect(screen.queryByRole('link', { name: /GitHub/ })).not.toBeInTheDocument();
-			expect(document.querySelector('#work-minimal-work dl')).toBeNull();
-			expect(document.querySelectorAll('#work-minimal-work h4')).toHaveLength(0);
+			expect(document.querySelector('#work-minimal-work dl')).not.toBeNull();
+			expect(document.querySelectorAll('#work-minimal-work h4')).toHaveLength(3);
 		} finally {
 			content.profile = originalProfile;
 			content.works = originalWorks;

@@ -127,28 +127,20 @@
 								<p class="blurb">{work.blurb}</p>
 							</header>
 
-							{#if work.role || work.period || work.tech?.length}
-								<dl>
-									{#if work.role}
-										<div>
-											<dt>{profile.workMetaLabels.role}</dt>
-											<dd>{work.role}</dd>
-										</div>
-									{/if}
-									{#if work.period}
-										<div>
-											<dt>{profile.workMetaLabels.period}</dt>
-											<dd>{work.period}</dd>
-										</div>
-									{/if}
-									{#if work.tech?.length}
-										<div>
-											<dt>{profile.workMetaLabels.tech}</dt>
-											<dd>{work.tech.join(' / ')}</dd>
-										</div>
-									{/if}
-								</dl>
-							{/if}
+							<dl>
+								<div>
+									<dt>{profile.workMetaLabels.role}</dt>
+									<dd>{work.role}</dd>
+								</div>
+								<div>
+									<dt>{profile.workMetaLabels.period}</dt>
+									<dd>{work.period}</dd>
+								</div>
+								<div>
+									<dt>{profile.workMetaLabels.tech}</dt>
+									<dd>{work.tech.join(' / ')}</dd>
+								</div>
+							</dl>
 
 							{#if work.description?.length}
 								<div class="prose">
@@ -156,32 +148,26 @@
 								</div>
 							{/if}
 
-							{#if work.context?.length}
-								<section class="work-detail" aria-label={profile.workMetaLabels.context}>
-									<h4>{profile.workMetaLabels.context}</h4>
-									<div class="prose">
-										{#each work.context as paragraph (paragraph)}<p>{paragraph}</p>{/each}
-									</div>
-								</section>
-							{/if}
+							<section class="work-detail" aria-label={profile.workMetaLabels.context}>
+								<h4>{profile.workMetaLabels.context}</h4>
+								<div class="prose">
+									{#each work.context as paragraph (paragraph)}<p>{paragraph}</p>{/each}
+								</div>
+							</section>
 
-							{#if work.approach?.length}
-								<section class="work-detail" aria-label={profile.workMetaLabels.approach}>
-									<h4>{profile.workMetaLabels.approach}</h4>
-									<div class="prose">
-										{#each work.approach as paragraph (paragraph)}<p>{paragraph}</p>{/each}
-									</div>
-								</section>
-							{/if}
+							<section class="work-detail" aria-label={profile.workMetaLabels.approach}>
+								<h4>{profile.workMetaLabels.approach}</h4>
+								<div class="prose">
+									{#each work.approach as paragraph (paragraph)}<p>{paragraph}</p>{/each}
+								</div>
+							</section>
 
-							{#if work.outcome?.length}
-								<section class="work-detail" aria-label={profile.workMetaLabels.outcome}>
-									<h4>{profile.workMetaLabels.outcome}</h4>
-									<div class="prose">
-										{#each work.outcome as paragraph (paragraph)}<p>{paragraph}</p>{/each}
-									</div>
-								</section>
-							{/if}
+							<section class="work-detail" aria-label={profile.workMetaLabels.outcome}>
+								<h4>{profile.workMetaLabels.outcome}</h4>
+								<div class="prose">
+									{#each work.outcome as paragraph (paragraph)}<p>{paragraph}</p>{/each}
+								</div>
+							</section>
 
 							{#if work.links?.length}
 								<nav class="work-links" aria-label={`${work.title} ${profile.sectionLabels.links}`}>
