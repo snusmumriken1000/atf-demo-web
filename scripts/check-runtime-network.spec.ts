@@ -116,6 +116,8 @@ describe('routeToFile', () => {
 		['/showcase/', '/showcase.html'],
 		['/profile', '/profile.html'],
 		['/profile/', '/profile.html'],
+		['/ask', '/ask.html'],
+		['/ask/', '/ask.html'],
 		['/_app/app.js', '/_app/app.js']
 	])('%s を %s に解決する', (route, expected) => {
 		expect(routeToFile(route)).toBe(expected);

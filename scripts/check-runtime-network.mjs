@@ -11,7 +11,7 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 
-const ROUTES = ['/', '/showcase', '/profile'];
+const ROUTES = ['/', '/showcase', '/profile', '/ask'];
 const NAVIGATION_TIMEOUT_MS = 10_000;
 const FONT_TIMEOUT_MS = 3_000;
 const ANIMATION_TIMEOUT_MS = 2_000;
@@ -51,6 +51,7 @@ export function routeToFile(pathname) {
 	if (pathname === '/') return '/index.html';
 	if (pathname === '/showcase' || pathname === '/showcase/') return '/showcase.html';
 	if (pathname === '/profile' || pathname === '/profile/') return '/profile.html';
+	if (pathname === '/ask' || pathname === '/ask/') return '/ask.html';
 	return pathname;
 }
 
@@ -235,7 +236,9 @@ export async function runRuntimeNetworkCheck() {
 		await verifyMonitorSelfCheck(browser, started.origin);
 
 		throwIfViolations(violations);
-		console.log('check-runtime-network: OK(3 ルートの実行時通信は同一オリジン/data: のみ)');
+		console.log(
+			`check-runtime-network: OK(${ROUTES.length} ルートの実行時通信は同一オリジン/data: のみ)`
+		);
 	} finally {
 		await browser?.close().catch(() => {});
 		if (server) {

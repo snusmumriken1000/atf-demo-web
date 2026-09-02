@@ -8,7 +8,8 @@ const minimalContent = (): SiteContent => ({
 		entryLead: 'Lead',
 		faces: {
 			showcase: { label: 'Showcase', lead: 'Lead' },
-			profile: { label: 'Profile', lead: 'Lead' }
+			profile: { label: 'Profile', lead: 'Lead' },
+			ask: { label: 'Ask', lead: 'Lead' }
 		},
 		navigation: {
 			top: 'Top',
@@ -32,6 +33,30 @@ const minimalContent = (): SiteContent => ({
 		skills: []
 	},
 	works: [{ id: 'valid-id', title: 'Work', blurb: 'Blurb', hue: 0 }],
+	ask: {
+		greeting: 'Hello',
+		notice: 'Notice',
+		inputLabel: 'Question',
+		placeholder: 'Ask',
+		sendLabel: 'Send',
+		suggestions: ['作品は?'],
+		fallback: 'Sorry',
+		sourceLabel: 'Source',
+		botName: 'Bot',
+		userName: 'You',
+		companionAlt: 'Round white creature',
+		leads: {
+			greeting: 'Hi',
+			help: 'Help',
+			about: 'About',
+			career: 'Career',
+			skill: 'Skill',
+			work: 'Work',
+			link: 'Link',
+			site: 'Site',
+			general: 'General'
+		}
+	},
 	audio: {
 		label: 'Sound',
 		enableLabel: 'Enable',
@@ -95,5 +120,17 @@ describe('validateContent', () => {
 		candidate.audio.volume = 0;
 		candidate.audio.octaveRange = 0.5;
 		expect(() => validateContent(candidate)).not.toThrow();
+	});
+
+	it('質問例の重複を拒否する(keyed each に使う)', () => {
+		const candidate = minimalContent();
+		candidate.ask.suggestions = ['作品は?', '作品は?'];
+		expect(() => validateContent(candidate)).toThrow(/ask\.suggestions に重複/);
+	});
+
+	it('質問例が空だと拒否する(会話の入口がなくなる)', () => {
+		const candidate = minimalContent();
+		candidate.ask.suggestions = [];
+		expect(() => validateContent(candidate)).toThrow(/ask\.suggestions/);
 	});
 });

@@ -25,9 +25,10 @@ const links = (...hrefs: string[]) => hrefs.map((href) => `<a href="${href}">lin
 
 // 実際のプリレンダリング出力と同じ相対リンク構成(全ページ相互リンク)
 const validBuild = {
-	'index.html': page(links('#main', './showcase', './profile')),
-	'showcase.html': page(links('#main', './', './profile')),
-	'profile.html': page(links('#main', './', './showcase'))
+	'index.html': page(links('#main', './showcase', './profile', './ask')),
+	'showcase.html': page(links('#main', './', './profile', './ask')),
+	'profile.html': page(links('#main', './', './showcase', './ask')),
+	'ask.html': page(links('#main', './', './showcase', './profile'))
 };
 
 function runCheck(files: Record<string, string>) {
@@ -44,7 +45,7 @@ function runCheck(files: Record<string, string>) {
 }
 
 describe('check-static.mjs', () => {
-	it('3 ページが相互リンクしていれば成功する', () => {
+	it('全ページが相互リンクしていれば成功する', () => {
 		const result = runCheck(validBuild);
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain('check-static: OK');
@@ -70,10 +71,12 @@ describe('check-static.mjs', () => {
 	});
 
 	it('直接リンクがなくても推移的に到達できれば成功する', () => {
+		// 一方向の輪(index → showcase → profile → ask → index)でも全ページに届く
 		const result = runCheck({
 			'index.html': page(links('./showcase')),
 			'showcase.html': page(links('./profile')),
-			'profile.html': page(links('./'))
+			'profile.html': page(links('./ask')),
+			'ask.html': page(links('./'))
 		});
 		expect(result.status).toBe(0);
 	});
@@ -82,7 +85,7 @@ describe('check-static.mjs', () => {
 		const result = runCheck({
 			...validBuild,
 			'index.html': page(
-				`${links('./showcase', './profile')}<script src="https://cdn.example.com/a.js"></script>`
+				`${links('./showcase', './profile', './ask')}<script src="https://cdn.example.com/a.js"></script>`
 			)
 		});
 		expect(result.status).toBe(1);
@@ -93,7 +96,7 @@ describe('check-static.mjs', () => {
 		const result = runCheck({
 			...validBuild,
 			'index.html': page(
-				`${links('./showcase', './profile')}<script src="//cdn.example.com/a.js"></script>`
+				`${links('./showcase', './profile', './ask')}<script src="//cdn.example.com/a.js"></script>`
 			)
 		});
 		expect(result.status).toBe(1);
@@ -103,7 +106,7 @@ describe('check-static.mjs', () => {
 	it('外部サイトへのハイパーリンク(a href)は許容する', () => {
 		const result = runCheck({
 			...validBuild,
-			'index.html': page(links('./showcase', './profile', 'https://github.com/example'))
+			'index.html': page(links('./showcase', './profile', './ask', 'https://github.com/example'))
 		});
 		expect(result.status).toBe(0);
 	});
@@ -151,7 +154,7 @@ describe('check-static.mjs', () => {
 		const result = runCheck({
 			...validBuild,
 			'index.html': page(
-				`${links('./showcase', './profile')}<style>body { background: url("https://cdn.example.com/bg.png"); }</style>`
+				`${links('./showcase', './profile', './ask')}<style>body { background: url("https://cdn.example.com/bg.png"); }</style>`
 			)
 		});
 		expect(result.status).toBe(1);
@@ -232,10 +235,10 @@ describe('check-static.mjs', () => {
 		const result = runCheck({
 			...validBuild,
 			'index.html': page(
-				`${links('./showcase', './profile')}<iframe src="https://embed.example.com/x"></iframe>`
+				`${links('./showcase', './profile', './ask')}<iframe src="https://embed.example.com/x"></iframe>`
 			),
 			'showcase.html': page(
-				`${links('#main', './', './profile')}<video poster="https://cdn.example.com/p.jpg"></video>`
+				`${links('#main', './', './profile', './ask')}<video poster="https://cdn.example.com/p.jpg"></video>`
 			)
 		});
 		expect(result.status).toBe(1);
@@ -247,10 +250,10 @@ describe('check-static.mjs', () => {
 		const result = runCheck({
 			...validBuild,
 			'index.html': page(
-				`${links('./showcase', './profile')}<img src=https://cdn.example.com/a.png>`
+				`${links('./showcase', './profile', './ask')}<img src=https://cdn.example.com/a.png>`
 			),
 			'showcase.html': page(
-				`${links('#main', './', './profile')}<script src=//cdn.example.com/b.js></script>`
+				`${links('#main', './', './profile', './ask')}<script src=//cdn.example.com/b.js></script>`
 			)
 		});
 		expect(result.status).toBe(1);
@@ -262,7 +265,7 @@ describe('check-static.mjs', () => {
 		const result = runCheck({
 			...validBuild,
 			'index.html': page(
-				`${links('./showcase', './profile')}<a href=https://github.com/example>link</a>`
+				`${links('./showcase', './profile', './ask')}<a href=https://github.com/example>link</a>`
 			)
 		});
 		expect(result.status).toBe(0);
@@ -274,10 +277,10 @@ describe('check-static.mjs', () => {
 			// 許容はコンテキストごとに分離されている: JS リテラル文脈で許容される
 			// URL でも、リソースとして読み込まれる属性値では違反とする
 			'index.html': page(
-				`${links('./showcase', './profile')}<img src="https://svelte.dev/e/logo.png">`
+				`${links('./showcase', './profile', './ask')}<img src="https://svelte.dev/e/logo.png">`
 			),
 			'showcase.html': page(
-				`${links('#main', './', './profile')}<img src="http://www.w3.org/Icons/valid-html401.png">`
+				`${links('#main', './', './profile', './ask')}<img src="http://www.w3.org/Icons/valid-html401.png">`
 			)
 		});
 		expect(result.status).toBe(1);
@@ -289,7 +292,7 @@ describe('check-static.mjs', () => {
 		const result = runCheck({
 			...validBuild,
 			'index.html': page(
-				`${links('./showcase', './profile')}<script>fetch("https://analytics.example.com/beacon");</script>`
+				`${links('./showcase', './profile', './ask')}<script>fetch("https://analytics.example.com/beacon");</script>`
 			)
 		});
 		expect(result.status).toBe(1);
@@ -303,7 +306,7 @@ describe('check-static.mjs', () => {
 			// <style> 除去が <script> 抽出より先だと、"<style>"…"</style>" の間の
 			// コードが script 本文から欠けて素通りする(その回帰テスト)
 			'index.html': page(
-				`${links('./showcase', './profile')}<script>const a = "<style>"; fetch("https://api.example.com/x"); const b = "</style>";</script>`
+				`${links('./showcase', './profile', './ask')}<script>const a = "<style>"; fetch("https://api.example.com/x"); const b = "</style>";</script>`
 			)
 		});
 		expect(result.status).toBe(1);
@@ -314,7 +317,7 @@ describe('check-static.mjs', () => {
 		const result = runCheck({
 			...validBuild,
 			'index.html': page(
-				`${links('./showcase', './profile')}<div style="background: url('https://cdn.example.com/bg.png')">x</div>`
+				`${links('./showcase', './profile', './ask')}<div style="background: url('https://cdn.example.com/bg.png')">x</div>`
 			)
 		});
 		expect(result.status).toBe(1);

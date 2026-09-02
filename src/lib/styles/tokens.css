@@ -59,16 +59,20 @@
 	--motion-draw-card: 650ms;
 	/* 音の再生中に動くイコライザの 1 周期 */
 	--motion-sound-pulse: 1200ms;
+	/* 面 3 の生き物: 呼吸とまばたきの周期 */
+	--motion-breathe: 4200ms;
+	--motion-blink: 6400ms;
 	--motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /*
- * ダーク基調の面(入口 / と面 1 /showcase)。
+ * ダーク基調の面(入口 / ・面 1 /showcase・面 3 /ask)。
  * 入口は面 1 と同トーンにして「スタイリッシュ」の第一印象を一貫させる(#3 の確定判断)。
- * 面 2(profile)はライトのまま。
+ * 面 3(対話)も同トーンに揃え、読み物である面 2(profile)だけライトのままにする。
  */
 body:has([data-face='entry']),
-body:has([data-face='visual']) {
+body:has([data-face='visual']),
+body:has([data-face='dialogue']) {
 	--color-bg: #0b0f1a;
 	--color-fg: #e8eaf0;
 	--color-fg-muted: #98a1b3;

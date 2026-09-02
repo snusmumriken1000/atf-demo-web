@@ -65,6 +65,12 @@ export const validateContent = (content: SiteContent) => {
 	validateLinks(content.profile.links, 'profile.links');
 
 	// 音の設定。範囲外の値は耳に痛い音や無音の原因になるため早い段階で弾く
+	// 質問例は Svelte の keyed each に使うので重複を許さない
+	assertUnique(content.ask.suggestions, 'ask.suggestions');
+	if (content.ask.suggestions.length === 0) {
+		throw new Error('content.ts: ask.suggestions は 1 件以上書いてください');
+	}
+
 	assertRange(content.audio.volume, 0, 1, 'audio.volume');
 	assertRange(content.audio.bpm, 40, 180, 'audio.bpm');
 	assertRange(content.audio.baseHz, 20, 2000, 'audio.baseHz');

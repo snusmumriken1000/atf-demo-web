@@ -7,19 +7,24 @@ const mockPage = vi.hoisted(() => ({ route: { id: '/showcase' as string | null }
 vi.mock('$app/state', () => ({ page: mockPage }));
 
 describe('FaceSwitcher', () => {
-	it('showcase では入口へ戻るリンクと Profile へのリンクを出す', () => {
-		mockPage.route.id = '/showcase';
+	it.each([
+		['/showcase', ['Profile', 'Ask'], ['/profile', '/ask']],
+		['/profile', ['Showcase', 'Ask'], ['/showcase', '/ask']],
+		['/ask', ['Showcase', 'Profile'], ['/showcase', '/profile']]
+	])('%s では入口へ戻るリンクと、他の面へのリンクを出す', (route, labels, hrefs) => {
+		mockPage.route.id = route;
 		render(FaceSwitcher);
 
 		expect(screen.getByRole('link', { name: '← Top' })).toHaveAttribute('href', '/');
-		expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
+		for (const [index, label] of labels.entries()) {
+			expect(screen.getByRole('link', { name: label })).toHaveAttribute('href', hrefs[index]);
+		}
 	});
 
-	it('profile では入口へ戻るリンクと Showcase へのリンクを出す', () => {
-		mockPage.route.id = '/profile';
+	it('いま見ている面へのリンクは出さない', () => {
+		mockPage.route.id = '/ask';
 		render(FaceSwitcher);
 
-		expect(screen.getByRole('link', { name: '← Top' })).toHaveAttribute('href', '/');
-		expect(screen.getByRole('link', { name: 'Showcase' })).toHaveAttribute('href', '/showcase');
+		expect(screen.queryByRole('link', { name: 'Ask' })).not.toBeInTheDocument();
 	});
 });

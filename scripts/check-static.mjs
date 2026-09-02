@@ -2,8 +2,8 @@
  * ビルド成果物(build/)の静的検証。Node 標準モジュールのみ使用。
  *
  * 検証内容:
- *   1. 3 ページ(index.html / showcase.html / profile.html)が存在すること
- *   2. 3 ページが内部リンクで相互に到達可能であること(リンクグラフ)
+ *   1. 4 ページ(index.html / showcase.html / profile.html / ask.html)が存在すること
+ *   2. 4 ページが内部リンクで相互に到達可能であること(リンクグラフ)
  *   3. 外部 URL 参照がないこと(default-deny + 許容リスト方式)
  *
  * 3 は build/ 配下の html / css / js / svg を再帰走査し、外部 URL らしき
@@ -48,7 +48,8 @@ const ALLOWED_NAMESPACE_URIS = new Set([
 const pages = {
 	'/': 'index.html',
 	'/showcase': 'showcase.html',
-	'/profile': 'profile.html'
+	'/profile': 'profile.html',
+	'/ask': 'ask.html'
 };
 
 // 外部 URL 検査の対象拡張子(version.json / robots.txt 等は対象外)
@@ -284,4 +285,6 @@ if (errors.length > 0) {
 	process.exit(1);
 }
 
-console.log('check-static: OK(3 ページの存在・相互到達性・外部 URL 参照なしを確認)');
+console.log(
+	`check-static: OK(${Object.keys(pages).length} ページの存在・相互到達性・外部 URL 参照なしを確認)`
+);

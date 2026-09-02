@@ -1,5 +1,5 @@
 <!--
-	入口ページ。2 つの面(Showcase / Profile)を選ぶ「静かな 2 分割」のスプリット画面。
+	入口ページ。3 つの面(Showcase / Profile / Ask)を選ぶスプリット画面。
 	面 1 と同じダークトーン(tokens.css の body:has 反転)で第一印象を一貫させる。
 	入場フェードは showcase のヒーローと同じ CSS パターン(rise + stagger)。
 -->
@@ -28,6 +28,10 @@
 		<a class="rise" href={resolve('/profile')}>
 			<h2>{site.faces.profile.label}</h2>
 			<p>{site.faces.profile.lead}</p>
+		</a>
+		<a class="rise" href={resolve('/ask')}>
+			<h2>{site.faces.ask.label}</h2>
+			<p>{site.faces.ask.lead}</p>
 		</a>
 	</nav>
 </section>
@@ -59,14 +63,21 @@
 
 	nav {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: repeat(3, 1fr);
 		gap: var(--space-4);
-		max-width: 48rem;
+		max-width: 64rem;
 		width: 100%;
 		margin: 0 auto;
 	}
 
-	/* 狭幅では縦積みにする(DOM 順 = 視覚順を維持) */
+	/* 中幅では 2 列、狭幅では縦積みにする(DOM 順 = 視覚順を維持) */
+	@media (max-width: 60rem) {
+		nav {
+			grid-template-columns: repeat(2, 1fr);
+			max-width: 48rem;
+		}
+	}
+
 	@media (max-width: 40rem) {
 		nav {
 			grid-template-columns: 1fr;
@@ -78,7 +89,7 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: flex-end;
-		min-height: 40vh;
+		min-height: 34vh;
 		padding: var(--space-6);
 		border: 1px solid color-mix(in srgb, var(--color-fg-muted) 35%, transparent);
 		border-radius: var(--space-2);
@@ -133,5 +144,9 @@
 
 	nav a.rise:nth-child(2) {
 		animation-delay: calc(var(--motion-stagger) * 2);
+	}
+
+	nav a.rise:nth-child(3) {
+		animation-delay: calc(var(--motion-stagger) * 3);
 	}
 </style>

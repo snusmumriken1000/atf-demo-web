@@ -86,6 +86,48 @@ export type AudioContent = {
 	octaveRange: number;
 };
 
+/**
+ * 面 3(ask)の文言。
+ *
+ * ボットは content.ts に書いてあることだけを答える。回答の中身は
+ * 経歴・スキル・作品からそのまま引かれ、ここにあるのは前置きや案内の文だけ。
+ */
+export type AskContent = {
+	/** 面を開いたときにボットが最初に出す言葉 */
+	greeting: string;
+	/** 仕組みの注記。LLM ではなくサイト内検索であることを正直に書く */
+	notice: string;
+	/** 入力欄のラベル(読み上げ用)とプレースホルダ */
+	inputLabel: string;
+	placeholder: string;
+	/** 送信ボタンの文言 */
+	sendLabel: string;
+	/** 押すとそのまま送れる質問例(3〜5 件を目安に) */
+	suggestions: string[];
+	/** 答えられないときの返答 */
+	fallback: string;
+	/** 回答に添える出典の見出し */
+	sourceLabel: string;
+	/** 会話ログでの話者の呼び名。botName は話し相手の生き物の名前になる */
+	botName: string;
+	userName: string;
+	/** 生き物の見た目の説明(読み上げ用) */
+	companionAlt: string;
+	/** 回答の前置き。意図ごとに使い分ける */
+	leads: {
+		greeting: string;
+		help: string;
+		about: string;
+		career: string;
+		skill: string;
+		work: string;
+		link: string;
+		site: string;
+		/** 意図が分からず、検索結果だけで答えるときの前置き */
+		general: string;
+	};
+};
+
 /** サイト全体のコンテンツ(表示文言)一式 */
 export type SiteContent = {
 	site: {
@@ -97,6 +139,7 @@ export type SiteContent = {
 		faces: {
 			showcase: { label: string; lead: string };
 			profile: { label: string; lead: string };
+			ask: { label: string; lead: string };
 		};
 		navigation: {
 			top: string;
@@ -140,4 +183,6 @@ export type SiteContent = {
 	works: Work[];
 	/** 面 1(showcase)の空間オーディオ */
 	audio: AudioContent;
+	/** 面 3(ask)の対話 */
+	ask: AskContent;
 };
