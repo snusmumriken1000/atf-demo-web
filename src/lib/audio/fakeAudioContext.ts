@@ -36,6 +36,11 @@ export class FakeAudioParam {
 		return this;
 	}
 
+	exponentialRampToValueAtTime(value: number) {
+		this.calls.push({ method: 'exponentialRampToValueAtTime', value });
+		return this;
+	}
+
 	cancelScheduledValues() {
 		this.calls.push({ method: 'cancelScheduledValues', value: this.value });
 		return this;
@@ -59,13 +64,23 @@ class FakeNode {
 class FakeScheduledNode extends FakeNode {
 	started = 0;
 	stopped = 0;
+	startedAt: number | null = null;
+	stoppedAt: number | null = null;
+	onended: (() => void) | null = null;
 
-	start() {
+	start(when?: number) {
 		this.started += 1;
+		this.startedAt = when ?? null;
 	}
 
-	stop() {
+	stop(when?: number) {
 		this.stopped += 1;
+		this.stoppedAt = when ?? null;
+	}
+
+	/** 実ブラウザで音が鳴り終わった状況を再現する */
+	finish() {
+		this.onended?.();
 	}
 }
 
@@ -76,6 +91,7 @@ export class FakeGainNode extends FakeNode {
 export class FakeOscillatorNode extends FakeScheduledNode {
 	type = 'sine';
 	frequency = new FakeAudioParam(440);
+	detune = new FakeAudioParam(0);
 }
 
 export class FakeBufferSourceNode extends FakeScheduledNode {

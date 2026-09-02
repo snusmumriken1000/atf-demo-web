@@ -6,10 +6,13 @@
  * オシレータとノイズから音そのものを生成する。リポジトリに増えるのはこのコードだけで、
  * バイナリ資産は 0 byte。残響(ConvolverNode)のインパルス応答もコードで作る。
  *
- * 【グラフの形】
- *   voice(osc / noise) → filter → toneGain(LFO で揺らぐ) → levelGain(アプリが制御)
- *     → panner(HRTF) →┬→ master → destination
- *                      └→ reverbSend → convolver → master
+ * 【スロットという考え方】
+ * 音源を「スロット(= 空間上の位置)」として先に用意し、譜面(chillScore.ts)が
+ * そこへ音符を投げ込む。スロットは DOM 要素に紐づけて動かせるので、
+ * 「メロディは作品タイルの位置から鳴り、スクロールすると音像も動く」が成り立つ。
+ *
+ *   voice(osc / noise) → env → slot.input → panner(HRTF) →┬→ master → destination
+ *                                                          └→ reverbSend → convolver → master
  *
  * 定位は PannerNode の panningModel = 'HRTF' に任せる。ヘッドホンで聴くと
  * 前後・左右・上下が知覚できる(スピーカーでは左右の広がりに留まる)。
@@ -19,18 +22,8 @@
  * エンジン自身は渡されたコンテキストだけを触る。
  */
 
+import type { Note, NoteKind } from './chillScore';
 import type { ListenerState, Vector3 } from './spatialField';
-
-/** 音源の種類。種類ごとに声(voice)の作り方とフィルタが変わる */
-export type SourceKind = 'drone' | 'tone' | 'air';
-
-export type SpatialSourceSpec = {
-	/** 音源の識別子(showcase の data-audio-source と対応させる) */
-	id: string;
-	kind: SourceKind;
-	/** 基準となる周波数(Hz) */
-	frequency: number;
-};
 
 /** フェードイン / アウトにかける秒数(音の出入りを滑らかにする) */
 export const FADE_SECONDS = 1.2;
@@ -40,28 +33,31 @@ const LEVEL_SMOOTHING = 0.08;
 /** 無音とみなす下限。指数ランプは 0 を扱えないため使う */
 const SILENCE = 0.0001;
 
-/** 種類ごとの基準音量。合計しても歪まないよう控えめに置く */
-const KIND_GAIN: Record<SourceKind, number> = {
-	drone: 0.32,
-	tone: 0.22,
-	air: 0.1
+/*
+ * 音色ごとの音量。打点だけが飛び出して隙間が無音になると「チル」に聞こえないので、
+ * パッド(和音の床)を厚めに、打楽器を控えめに置いてバランスを取っている。
+ */
+const KIND_GAIN: Record<NoteKind, number> = {
+	kick: 0.7,
+	snare: 0.28,
+	hat: 0.13,
+	bass: 0.55,
+	pad: 0.34,
+	key: 0.32
 };
 
-/** 揺らぎ(LFO)の速さ。音源ごとに少しずつずらして周期の一致を避ける */
-const LFO_BASE_HZ = 0.05;
-const LFO_STEP_HZ = 0.017;
-/** 揺らぎの深さ(基準音量に対する比) */
-const LFO_DEPTH_RATIO = 0.35;
+/** 要素に紐づかないスロットの既定位置 */
+const DEFAULT_POSITION: Vector3 = { x: 0, y: 0, z: -2 };
 
-/** 要素が見つからない音源(環境音)の既定位置 */
-const DEFAULT_POSITION: Vector3 = { x: 0, y: 1.2, z: -3 };
-
-type SourceNodes = {
-	spec: SpatialSourceSpec;
-	voices: (OscillatorNode | AudioBufferSourceNode)[];
-	lfo: OscillatorNode;
-	levelGain: GainNode;
+type Slot = {
+	id: string;
+	input: GainNode;
 	panner: PannerNode;
+};
+
+type ActiveVoice = {
+	nodes: (OscillatorNode | AudioBufferSourceNode)[];
+	gain: GainNode;
 };
 
 /**
@@ -106,7 +102,7 @@ function createImpulseResponse(context: AudioContext, seconds: number, decay: nu
 	return buffer;
 }
 
-/** ループ再生用のホワイトノイズ(空気感の音源) */
+/** ループ再生用のホワイトノイズ(ハイハット・スネア・空気感の材料) */
 function createNoiseBuffer(context: AudioContext, seconds: number): AudioBuffer {
 	const length = Math.max(1, Math.floor(context.sampleRate * seconds));
 	const buffer = context.createBuffer(1, length, context.sampleRate);
@@ -131,7 +127,7 @@ function rampParam(param: AudioParam | undefined, value: number, now: number, sm
  */
 function applyVector(
 	target: { [key: string]: unknown },
-	prefix: 'position' | 'forward' | 'orientation' | 'up',
+	prefix: 'position' | 'forward' | 'up',
 	vector: Vector3,
 	now: number,
 	legacy?: (x: number, y: number, z: number) => void
@@ -152,7 +148,8 @@ export class SpatialAudioEngine {
 	#master: GainNode;
 	#reverbSend: GainNode;
 	#noiseBuffer: AudioBuffer | null = null;
-	#sources = new Map<string, SourceNodes>();
+	#slots = new Map<string, Slot>();
+	#active = new Set<ActiveVoice>();
 	#volume: number;
 	#disposed = false;
 
@@ -165,120 +162,270 @@ export class SpatialAudioEngine {
 		this.#master.connect(context.destination);
 
 		const convolver = context.createConvolver();
-		convolver.buffer = createImpulseResponse(context, 2.4, 2.6);
+		convolver.buffer = createImpulseResponse(context, 2.6, 2.4);
 		convolver.connect(this.#master);
 
 		this.#reverbSend = context.createGain();
-		this.#reverbSend.gain.value = 0.3;
+		// チルな音像にするため残響は深めに。ただし輪郭が消えない程度で止める
+		this.#reverbSend.gain.value = 0.34;
 		this.#reverbSend.connect(convolver);
 	}
 
-	/** 登録済みの音源 id 一覧(テスト・デバッグ用) */
-	get sourceIds(): string[] {
-		return [...this.#sources.keys()];
+	/** 現在の再生時刻(秒)。スケジューラが先読みの基準に使う */
+	get currentTime(): number {
+		return this.context.currentTime;
 	}
 
-	/** 音源を 1 つ足して鳴らし始める(音量は master が 0 のため、まだ聞こえない) */
-	addSource(spec: SpatialSourceSpec): void {
-		if (this.#disposed || this.#sources.has(spec.id)) return;
+	/** 登録済みのスロット id 一覧 */
+	get slotIds(): string[] {
+		return [...this.#slots.keys()];
+	}
 
+	/** 音を鳴らす場所(スロット)を用意する。位置は後から更新できる */
+	addSlot(id: string): void {
+		if (this.#disposed || this.#slots.has(id)) return;
 		const context = this.context;
-		const now = context.currentTime;
-		const baseGain = KIND_GAIN[spec.kind];
 
 		const panner = context.createPanner();
 		panner.panningModel = 'HRTF';
 		panner.distanceModel = 'inverse';
-		panner.refDistance = 1;
+		// 距離による減衰は緩めにする。強すぎると左右に広げたパッドが消えてしまう
+		panner.refDistance = 1.5;
 		panner.maxDistance = 30;
-		panner.rolloffFactor = 1.1;
+		panner.rolloffFactor = 0.7;
 		panner.connect(this.#master);
 		panner.connect(this.#reverbSend);
 
-		// アプリ側(ポインタとの距離)で動かす音量
-		const levelGain = context.createGain();
-		levelGain.gain.value = 1;
-		levelGain.connect(panner);
+		const input = context.createGain();
+		input.gain.value = 1;
+		input.connect(panner);
 
-		// LFO でゆっくり揺れる音量
-		const toneGain = context.createGain();
-		toneGain.gain.value = baseGain;
-		toneGain.connect(levelGain);
-
-		const filter = context.createBiquadFilter();
-		filter.connect(toneGain);
-
-		const voices: (OscillatorNode | AudioBufferSourceNode)[] = [];
-
-		if (spec.kind === 'air') {
-			// 空気感: ノイズを帯域通過させた薄い層
-			filter.type = 'bandpass';
-			filter.frequency.value = spec.frequency;
-			filter.Q.value = 0.8;
-
-			this.#noiseBuffer ??= createNoiseBuffer(context, 2);
-			const noise = context.createBufferSource();
-			noise.buffer = this.#noiseBuffer;
-			noise.loop = true;
-			noise.connect(filter);
-			voices.push(noise);
-		} else {
-			// ドローン / トーン: 基音ともう 1 音をわずかにずらして厚みを出す
-			filter.type = 'lowpass';
-			filter.frequency.value = spec.frequency * (spec.kind === 'drone' ? 3 : 3.5);
-			filter.Q.value = 0.6;
-
-			const partials = spec.kind === 'drone' ? [1, 1.005] : [1, 2.002];
-			for (const ratio of partials) {
-				const oscillator = context.createOscillator();
-				oscillator.type = 'sine';
-				oscillator.frequency.value = spec.frequency * ratio;
-				const partialGain = context.createGain();
-				// 上の倍音は控えめに重ねる
-				partialGain.gain.value = ratio === 1 ? 1 : 0.35;
-				oscillator.connect(partialGain);
-				partialGain.connect(filter);
-				voices.push(oscillator);
-			}
-		}
-
-		// 音量の揺らぎ。周期は音源ごとにずらして重なりを避ける
-		const lfo = context.createOscillator();
-		lfo.type = 'sine';
-		lfo.frequency.value = LFO_BASE_HZ + this.#sources.size * LFO_STEP_HZ;
-		const lfoDepth = context.createGain();
-		lfoDepth.gain.value = baseGain * LFO_DEPTH_RATIO;
-		lfo.connect(lfoDepth);
-		lfoDepth.connect(toneGain.gain);
-
-		for (const voice of voices) voice.start(now);
-		lfo.start(now);
-
-		this.#sources.set(spec.id, { spec, voices, lfo, levelGain, panner });
-		this.setSourcePosition(spec.id, DEFAULT_POSITION);
+		this.#slots.set(id, { id, input, panner });
+		this.setSlotPosition(id, DEFAULT_POSITION);
 	}
 
-	/** 音源の 3D 位置を更新する */
-	setSourcePosition(id: string, position: Vector3): void {
-		const source = this.#sources.get(id);
-		if (!source) return;
-		const panner = source.panner as unknown as { [key: string]: unknown };
+	/** スロットの 3D 位置を更新する */
+	setSlotPosition(id: string, position: Vector3): void {
+		const slot = this.#slots.get(id);
+		if (!slot) return;
 		applyVector(
-			panner,
+			slot.panner as unknown as { [key: string]: unknown },
 			'position',
 			position,
 			this.context.currentTime,
-			typeof source.panner.setPosition === 'function'
-				? source.panner.setPosition.bind(source.panner)
+			typeof slot.panner.setPosition === 'function'
+				? slot.panner.setPosition.bind(slot.panner)
 				: undefined
 		);
 	}
 
-	/** 音源の音量倍率を更新する(ポインタとの距離で持ち上げる) */
-	setSourceLevel(id: string, level: number): void {
-		const source = this.#sources.get(id);
-		if (!source) return;
-		rampParam(source.levelGain.gain, level, this.context.currentTime, LEVEL_SMOOTHING);
+	/** スロットの音量倍率を更新する(ポインタとの距離で持ち上げる) */
+	setSlotLevel(id: string, level: number): void {
+		const slot = this.#slots.get(id);
+		if (!slot) return;
+		rampParam(slot.input.gain, level, this.context.currentTime, LEVEL_SMOOTHING);
+	}
+
+	/**
+	 * 常時鳴らす環境音(レコードのノイズのような薄い層)を始める。
+	 * ビートの隙間を埋めて、曲全体をひとつの空間に置いて聞かせる役割。
+	 */
+	startAmbience(slotId: string, frequency: number, level = 0.13): void {
+		const slot = this.#slots.get(slotId);
+		if (this.#disposed || !slot) return;
+		const context = this.context;
+
+		this.#noiseBuffer ??= createNoiseBuffer(context, 2);
+		const noise = context.createBufferSource();
+		noise.buffer = this.#noiseBuffer;
+		noise.loop = true;
+
+		const filter = context.createBiquadFilter();
+		filter.type = 'bandpass';
+		filter.frequency.value = frequency;
+		filter.Q.value = 0.7;
+
+		const gain = context.createGain();
+		gain.gain.value = level;
+
+		noise.connect(filter);
+		filter.connect(gain);
+		gain.connect(slot.input);
+		noise.start(context.currentTime);
+
+		this.#active.add({ nodes: [noise], gain });
+	}
+
+	/**
+	 * 音符を 1 つ鳴らす。when は AudioContext の絶対時刻(秒)。
+	 * 鳴り終わったノードは自動で切り離す。
+	 */
+	triggerNote(note: Note, when: number): void {
+		const slot = this.#slots.get(note.slot);
+		if (this.#disposed || !slot) return;
+
+		const context = this.context;
+		const peak = KIND_GAIN[note.kind] * note.level;
+		const gain = context.createGain();
+		gain.gain.setValueAtTime(SILENCE, when);
+		gain.connect(slot.input);
+
+		const nodes: (OscillatorNode | AudioBufferSourceNode)[] = [];
+		/** 音色ごとの終端。ここまで鳴らしてから停止する */
+		let stopAt = when + note.duration;
+
+		const noise = (): AudioBufferSourceNode => {
+			this.#noiseBuffer ??= createNoiseBuffer(context, 2);
+			const source = context.createBufferSource();
+			source.buffer = this.#noiseBuffer;
+			source.loop = true;
+			return source;
+		};
+
+		switch (note.kind) {
+			case 'kick': {
+				// 低い正弦波のピッチを一気に落とすと胴のある低音になる
+				const oscillator = context.createOscillator();
+				oscillator.type = 'sine';
+				oscillator.frequency.setValueAtTime(note.frequency, when);
+				oscillator.frequency.exponentialRampToValueAtTime(45, when + 0.09);
+				oscillator.connect(gain);
+				nodes.push(oscillator);
+
+				gain.gain.linearRampToValueAtTime(peak, when + 0.006);
+				gain.gain.exponentialRampToValueAtTime(SILENCE, when + note.duration);
+				break;
+			}
+			case 'snare': {
+				// ノイズを帯域で絞ってブラシのような当たりにする
+				const source = noise();
+				const filter = context.createBiquadFilter();
+				filter.type = 'bandpass';
+				filter.frequency.value = note.frequency;
+				filter.Q.value = 1.1;
+				source.connect(filter);
+				filter.connect(gain);
+				nodes.push(source);
+
+				gain.gain.linearRampToValueAtTime(peak, when + 0.004);
+				gain.gain.exponentialRampToValueAtTime(SILENCE, when + note.duration);
+				break;
+			}
+			case 'hat': {
+				const source = noise();
+				const filter = context.createBiquadFilter();
+				filter.type = 'highpass';
+				filter.frequency.value = note.frequency;
+				source.connect(filter);
+				filter.connect(gain);
+				nodes.push(source);
+
+				gain.gain.linearRampToValueAtTime(peak, when + 0.002);
+				gain.gain.exponentialRampToValueAtTime(SILENCE, when + note.duration);
+				break;
+			}
+			case 'bass': {
+				// 基音に少しだけ三角波を混ぜて芯を出す
+				const filter = context.createBiquadFilter();
+				filter.type = 'lowpass';
+				filter.frequency.value = 320;
+				filter.Q.value = 0.7;
+				filter.connect(gain);
+
+				for (const [type, ratio, mix] of [
+					['sine', 1, 1],
+					['triangle', 2, 0.18]
+				] as const) {
+					const oscillator = context.createOscillator();
+					oscillator.type = type;
+					oscillator.frequency.value = note.frequency * ratio;
+					const mixGain = context.createGain();
+					mixGain.gain.value = mix;
+					oscillator.connect(mixGain);
+					mixGain.connect(filter);
+					nodes.push(oscillator);
+				}
+
+				gain.gain.linearRampToValueAtTime(peak, when + 0.03);
+				gain.gain.exponentialRampToValueAtTime(SILENCE, when + note.duration);
+				break;
+			}
+			case 'pad': {
+				// ゆっくり立ち上がってゆっくり消える。和音の土台
+				const filter = context.createBiquadFilter();
+				filter.type = 'lowpass';
+				filter.frequency.value = 1100;
+				filter.Q.value = 0.5;
+				filter.connect(gain);
+
+				for (const detune of [-6, 6]) {
+					const oscillator = context.createOscillator();
+					oscillator.type = 'sine';
+					oscillator.frequency.value = note.frequency;
+					// わずかにずらした 2 声のうねりが厚みになる
+					if (oscillator.detune) oscillator.detune.value = detune;
+					oscillator.connect(filter);
+					nodes.push(oscillator);
+				}
+
+				// 立ち上がりを長く、保持も長く取る。次の小節の和音と重なって途切れない
+				const attack = Math.min(1.2, note.duration * 0.35);
+				gain.gain.linearRampToValueAtTime(peak, when + attack);
+				gain.gain.setValueAtTime(peak, when + note.duration * 0.75);
+				gain.gain.exponentialRampToValueAtTime(SILENCE, when + note.duration);
+				break;
+			}
+			case 'key': {
+				// エレピ風。倍音を薄く足した減衰音
+				const filter = context.createBiquadFilter();
+				filter.type = 'lowpass';
+				filter.frequency.value = 2400;
+				filter.Q.value = 0.6;
+				filter.connect(gain);
+
+				for (const [type, ratio, mix] of [
+					['triangle', 1, 1],
+					['sine', 2, 0.3],
+					['sine', 3.01, 0.08]
+				] as const) {
+					const oscillator = context.createOscillator();
+					oscillator.type = type;
+					oscillator.frequency.value = note.frequency * ratio;
+					const mixGain = context.createGain();
+					mixGain.gain.value = mix;
+					oscillator.connect(mixGain);
+					mixGain.connect(filter);
+					nodes.push(oscillator);
+				}
+
+				// 余韻を長めに取ると空間の広さが出る
+				stopAt = when + note.duration * 1.8;
+				gain.gain.linearRampToValueAtTime(peak, when + 0.008);
+				gain.gain.exponentialRampToValueAtTime(SILENCE, stopAt);
+				break;
+			}
+		}
+
+		const voice: ActiveVoice = { nodes, gain };
+		this.#active.add(voice);
+
+		for (const node of nodes) {
+			node.start(when);
+			node.stop(stopAt);
+		}
+		// 最後のノードが鳴り終わったら切り離す
+		const last = nodes.at(-1);
+		if (last) {
+			last.onended = () => {
+				this.#releaseVoice(voice);
+			};
+		}
+	}
+
+	#releaseVoice(voice: ActiveVoice) {
+		if (!this.#active.delete(voice)) return;
+		for (const node of voice.nodes) node.disconnect();
+		voice.gain.disconnect();
 	}
 
 	/** リスナー(聴き手)の位置と向きを更新する */
@@ -323,7 +470,7 @@ export class SpatialAudioEngine {
 		gain.linearRampToValueAtTime(this.#volume, now + FADE_SECONDS);
 	}
 
-	/** 全体音量を絞る。フェードが終わるまで待ってから resolve する */
+	/** 全体音量を絞る */
 	async fadeOut(): Promise<void> {
 		if (this.#disposed) return;
 		const now = this.context.currentTime;
@@ -350,25 +497,21 @@ export class SpatialAudioEngine {
 		if (this.#disposed) return;
 		this.#disposed = true;
 
-		for (const source of this.#sources.values()) {
-			for (const voice of source.voices) {
+		for (const voice of [...this.#active]) {
+			for (const node of voice.nodes) {
 				try {
-					voice.stop();
+					node.stop();
 				} catch {
 					// 既に停止済みなら無視してよい
 				}
-				voice.disconnect();
 			}
-			try {
-				source.lfo.stop();
-			} catch {
-				// 同上
-			}
-			source.lfo.disconnect();
-			source.levelGain.disconnect();
-			source.panner.disconnect();
+			this.#releaseVoice(voice);
 		}
-		this.#sources.clear();
+		for (const slot of this.#slots.values()) {
+			slot.input.disconnect();
+			slot.panner.disconnect();
+		}
+		this.#slots.clear();
 		this.#master.disconnect();
 		this.#reverbSend.disconnect();
 

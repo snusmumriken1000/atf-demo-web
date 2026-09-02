@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	clamp,
-	hueToFrequency,
+	driftPhase,
 	listenerFromPointer,
 	positionForRect,
 	proximityLevel
@@ -18,41 +18,6 @@ const rectAt = (centerX: number, centerY: number) => ({
 describe('clamp', () => {
 	it('範囲内はそのまま、範囲外は端に丸める', () => {
 		expect([clamp(0.5, 0, 1), clamp(-2, 0, 1), clamp(3, 0, 1)]).toEqual([0.5, 0, 1]);
-	});
-});
-
-describe('hueToFrequency', () => {
-	it('hue 0 は基準の高さになる', () => {
-		expect(hueToFrequency(0, 130.81, 2)).toBeCloseTo(130.81, 5);
-	});
-
-	it('色相が上がるほど音は高くなる(単調非減少)', () => {
-		const frequencies = [0, 60, 120, 180, 240, 300, 359].map((hue) =>
-			hueToFrequency(hue, 130.81, 2)
-		);
-		const sorted = [...frequencies].sort((a, b) => a - b);
-		expect(frequencies).toEqual(sorted);
-	});
-
-	it('octaveRange で決めた音域を超えない', () => {
-		const octaveRange = 2;
-		const highest = hueToFrequency(359, 130.81, octaveRange);
-		expect(highest).toBeLessThan(130.81 * Math.pow(2, octaveRange));
-	});
-
-	it('ペンタトニックの音度に量子化する(隣り合う色でも半音でぶつからない)', () => {
-		const base = 100;
-		const semitones = [0, 60, 120, 180, 240, 300, 359].map((hue) =>
-			Math.round(12 * Math.log2(hueToFrequency(hue, base, 2) / base))
-		);
-		// 5 音音階(0,2,4,7,9)を 2 オクターブに広げた音度だけが現れる
-		const allowed = new Set([0, 2, 4, 7, 9, 12, 14, 16, 19, 21]);
-		expect(semitones.every((semitone) => allowed.has(semitone))).toBe(true);
-	});
-
-	it('360 以上・負の色相も 0〜360 に丸めて扱う', () => {
-		expect(hueToFrequency(360, 130.81, 2)).toBeCloseTo(hueToFrequency(0, 130.81, 2), 5);
-		expect(hueToFrequency(-40, 130.81, 2)).toBeCloseTo(hueToFrequency(320, 130.81, 2), 5);
 	});
 });
 
@@ -147,5 +112,24 @@ describe('listenerFromPointer', () => {
 
 		expect(extreme.forward.x).toBeCloseTo(edge.forward.x, 5);
 		expect(extreme.forward.z).toBeLessThan(0); // 後ろを向いてしまわない
+	});
+});
+
+describe('driftPhase', () => {
+	it('period 秒で 1 周する(始点と終点が一致する)', () => {
+		expect(driftPhase(0, 26)).toBeCloseTo(0, 5);
+		expect(driftPhase(26, 26)).toBeCloseTo(0, 5);
+		expect(driftPhase(6.5, 26)).toBeCloseTo(1, 5);
+		expect(driftPhase(19.5, 26)).toBeCloseTo(-1, 5);
+	});
+
+	it('-1 〜 1 の範囲に収まる', () => {
+		const values = Array.from({ length: 40 }, (_, index) => driftPhase(index * 0.7, 26));
+		expect(values.every((value) => value >= -1 && value <= 1)).toBe(true);
+	});
+
+	it('period が 0 以下なら動かない(ゼロ除算しない)', () => {
+		expect(driftPhase(5, 0)).toBe(0);
+		expect(driftPhase(5, -3)).toBe(0);
 	});
 });

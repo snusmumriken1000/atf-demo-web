@@ -1,8 +1,8 @@
 /*
  * 空間オーディオの「音場」を決める純粋関数群(Web Audio API に一切依存しない)。
  *
- * 画面上の見た目(要素の位置・作品の色相)を 3D の音の配置へ写像する計算だけを
- * ここに置き、実際の音づくり(ノードグラフ)は spatialAudioEngine.ts が担当する。
+ * 画面上の要素の位置を 3D の音の配置へ写像する計算だけをここに置く。音の高さや譜面は
+ * chillScore.ts、実際の音づくり(ノードグラフ)は spatialAudioEngine.ts が担当する。
  * ブラウザ API を使わないので単体テストで挙動を固定できる。
  *
  * 座標系は Web Audio の既定に合わせる(右手系):
@@ -41,43 +41,20 @@ const NEAR_DEPTH = 1.2;
 /** 画面の上下端にある要素の奥行き(遠い) */
 const FAR_DEPTH = 6;
 
-/** ポインタで首を振れる最大角(ラジアン)。大きすぎると酔うので控えめにする */
-const MAX_YAW = 0.45;
-const MAX_PITCH = 0.22;
+/** ポインタで首を振れる最大角(ラジアン)。約 40 度。大きすぎると酔う */
+const MAX_YAW = 0.7;
+const MAX_PITCH = 0.26;
 /** ポインタでリスナー自身がずれる量 */
-const LISTENER_SHIFT_X = 0.6;
-const LISTENER_SHIFT_Y = 0.3;
+const LISTENER_SHIFT_X = 1;
+const LISTENER_SHIFT_Y = 0.4;
 
 /** ポインタが音源に重なったときの音量の持ち上げ幅(1 + この値が最大) */
 const PROXIMITY_BOOST = 0.8;
 /** 持ち上げが効く距離(ビューポート対角に対する比) */
 const PROXIMITY_RADIUS = 0.35;
 
-/** 5 音音階(ペンタトニック)の半音。どの 2 音を重ねても濁らない */
-const PENTATONIC_SEMITONES = [0, 2, 4, 7, 9];
-
 export const clamp = (value: number, min: number, max: number): number =>
 	Math.min(max, Math.max(min, value));
-
-/**
- * 作品の色相(0〜360)を音の高さに写す。
- *
- * 色相をそのまま連続的な周波数にすると隣り合う作品が半音でぶつかるため、
- * ペンタトニックの音度に量子化してから周波数へ戻す。これで何音が同時に
- * 鳴っても協和する。色が近い作品は音も近い、という対応は保たれる。
- *
- * @param hue 色相(範囲外・負の値は 0〜360 に丸め込む)
- * @param baseHz 最低音(hue = 0 のときの周波数)
- * @param octaveRange 使うオクターブ数
- */
-export function hueToFrequency(hue: number, baseHz: number, octaveRange: number): number {
-	const normalized = ((hue % 360) + 360) % 360;
-	const degreeCount = Math.max(1, Math.round(PENTATONIC_SEMITONES.length * octaveRange));
-	const degree = Math.min(degreeCount - 1, Math.floor((normalized / 360) * degreeCount));
-	const octave = Math.floor(degree / PENTATONIC_SEMITONES.length);
-	const semitone = octave * 12 + PENTATONIC_SEMITONES[degree % PENTATONIC_SEMITONES.length];
-	return baseHz * Math.pow(2, semitone / 12);
-}
 
 /**
  * 要素の画面位置を音源の 3D 座標へ写す。
@@ -119,6 +96,17 @@ export function proximityLevel(rect: Rect, pointer: Pointer | null, viewport: Vi
 	const distance = Math.hypot(deltaX, deltaY);
 
 	return 1 + clamp(1 - distance / PROXIMITY_RADIUS, 0, 1) * PROXIMITY_BOOST;
+}
+
+/**
+ * 音場をゆっくり回すための位相(-1 〜 1)。period 秒で 1 周する。
+ *
+ * 操作しなくても和音の床が静かに漂い、空間が生きているように感じられる。
+ * ポインタ操作(listenerFromPointer)とは独立に効く。
+ */
+export function driftPhase(seconds: number, period: number): number {
+	if (period <= 0) return 0;
+	return Math.sin((seconds / period) * Math.PI * 2);
 }
 
 /**

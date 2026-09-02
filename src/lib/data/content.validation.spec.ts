@@ -38,6 +38,7 @@ const minimalContent = (): SiteContent => ({
 		disableLabel: 'Disable',
 		hint: 'Headphones',
 		volume: 0.5,
+		bpm: 74,
 		baseHz: 130.81,
 		octaveRange: 2
 	}
@@ -80,6 +81,7 @@ describe('validateContent', () => {
 
 	it.each([
 		['audio.volume', (candidate: SiteContent) => (candidate.audio.volume = 1.4)],
+		['audio.bpm', (candidate: SiteContent) => (candidate.audio.bpm = 400)],
 		['audio.baseHz', (candidate: SiteContent) => (candidate.audio.baseHz = 5)],
 		['audio.octaveRange', (candidate: SiteContent) => (candidate.audio.octaveRange = 9)]
 	])('範囲外の %s を拒否する', (path, mutate) => {

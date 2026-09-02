@@ -66,6 +66,7 @@ export const validateContent = (content: SiteContent) => {
 
 	// 音の設定。範囲外の値は耳に痛い音や無音の原因になるため早い段階で弾く
 	assertRange(content.audio.volume, 0, 1, 'audio.volume');
+	assertRange(content.audio.bpm, 40, 180, 'audio.bpm');
 	assertRange(content.audio.baseHz, 20, 2000, 'audio.baseHz');
 	assertRange(content.audio.octaveRange, 0.5, 4, 'audio.octaveRange');
 };

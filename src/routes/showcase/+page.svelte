@@ -12,8 +12,6 @@
 	import SketchStroke from '$lib/components/SketchStroke.svelte';
 	import { handDrawnSequence } from '$lib/attachments/handDrawnSequence';
 	import SpatialAudioScene from '$lib/components/SpatialAudioScene.svelte';
-	import type { SpatialSourceSpec } from '$lib/audio/spatialAudioEngine';
-	import { hueToFrequency } from '$lib/audio/spatialField';
 	import { content } from '$lib/data/content';
 
 	const { site, hero, audio } = content;
@@ -23,21 +21,9 @@
 	// ステートメントは \n の位置で改行して大見出しにする
 	const statementLines = hero.statement.split('\n');
 
-	/*
-	 * 音場の構成。id は data-audio-source と対応し、その要素の画面位置から鳴る。
-	 * - hero: 正面に置く低いドローン(この面の土台になる音)
-	 * - 作品: 高さは hue から決まるので、タイルの色と音程が対応する
-	 * - air: 要素を持たない環境音。頭上やや奥に固定で置く
-	 */
-	const audioSources: SpatialSourceSpec[] = [
-		{ id: 'hero', kind: 'drone', frequency: audio.baseHz / 2 },
-		...tiles.map((work): SpatialSourceSpec => ({
-			id: work.id,
-			kind: 'tone',
-			frequency: hueToFrequency(work.hue, audio.baseHz, audio.octaveRange)
-		})),
-		{ id: 'air', kind: 'air', frequency: audio.baseHz * 6 }
-	];
+	// 音場に渡す作品タイル。id は data-audio-source と対応し、その要素の位置から
+	// メロディが鳴る。音の高さは hue から決まるので、タイルの色と音程が対応する
+	const audioTiles = tiles.map((work) => ({ id: work.id, hue: work.hue }));
 </script>
 
 <svelte:head>
@@ -46,7 +32,13 @@
 
 <section class="showcase" data-face="visual" {@attach handDrawnSequence()}>
 	<DrawingHand />
-	<SpatialAudioScene sources={audioSources} volume={audio.volume} />
+	<SpatialAudioScene
+		tiles={audioTiles}
+		bpm={audio.bpm}
+		baseHz={audio.baseHz}
+		octaveRange={audio.octaveRange}
+		volume={audio.volume}
+	/>
 	<header class="hero" data-audio-source="hero">
 		<p class="eyebrow draw-step" data-draw-step="eyebrow">{hero.name}<SketchStroke /></p>
 		<h1 class="statement">
