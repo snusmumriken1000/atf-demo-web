@@ -22,6 +22,12 @@ const validateLinks = (links: WorkLink[] | undefined, path: string) => {
 	);
 };
 
+const assertRange = (value: number, min: number, max: number, path: string) => {
+	if (!Number.isFinite(value) || value < min || value > max) {
+		throw new Error(`content.ts: ${path} は ${min} 〜 ${max} の数値で書いてください: ${value}`);
+	}
+};
+
 /**
  * 型だけでは表せない content.ts 内の識別子・Svelte keyed each の一意性を検証する。
  * content.ts の読み込み時に実行し、編集ミスを build/test の早い段階で明示する。
@@ -57,4 +63,9 @@ export const validateContent = (content: SiteContent) => {
 		);
 	}
 	validateLinks(content.profile.links, 'profile.links');
+
+	// 音の設定。範囲外の値は耳に痛い音や無音の原因になるため早い段階で弾く
+	assertRange(content.audio.volume, 0, 1, 'audio.volume');
+	assertRange(content.audio.baseHz, 20, 2000, 'audio.baseHz');
+	assertRange(content.audio.octaveRange, 0.5, 4, 'audio.octaveRange');
 };

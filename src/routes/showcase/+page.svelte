@@ -11,14 +11,33 @@
 	import DrawingHand from '$lib/components/DrawingHand.svelte';
 	import SketchStroke from '$lib/components/SketchStroke.svelte';
 	import { handDrawnSequence } from '$lib/attachments/handDrawnSequence';
+	import SpatialAudioScene from '$lib/components/SpatialAudioScene.svelte';
+	import type { SpatialSourceSpec } from '$lib/audio/spatialAudioEngine';
+	import { hueToFrequency } from '$lib/audio/spatialField';
 	import { content } from '$lib/data/content';
 
-	const { site, hero } = content;
+	const { site, hero, audio } = content;
 	// タイルに出す作品: featured 指定があればそれ、なければ先頭から。最大 4 件
 	const featured = content.works.filter((work) => work.featured);
 	const tiles = (featured.length > 0 ? featured : content.works).slice(0, 4);
 	// ステートメントは \n の位置で改行して大見出しにする
 	const statementLines = hero.statement.split('\n');
+
+	/*
+	 * 音場の構成。id は data-audio-source と対応し、その要素の画面位置から鳴る。
+	 * - hero: 正面に置く低いドローン(この面の土台になる音)
+	 * - 作品: 高さは hue から決まるので、タイルの色と音程が対応する
+	 * - air: 要素を持たない環境音。頭上やや奥に固定で置く
+	 */
+	const audioSources: SpatialSourceSpec[] = [
+		{ id: 'hero', kind: 'drone', frequency: audio.baseHz / 2 },
+		...tiles.map((work): SpatialSourceSpec => ({
+			id: work.id,
+			kind: 'tone',
+			frequency: hueToFrequency(work.hue, audio.baseHz, audio.octaveRange)
+		})),
+		{ id: 'air', kind: 'air', frequency: audio.baseHz * 6 }
+	];
 </script>
 
 <svelte:head>
@@ -27,7 +46,8 @@
 
 <section class="showcase" data-face="visual" {@attach handDrawnSequence()}>
 	<DrawingHand />
-	<header class="hero">
+	<SpatialAudioScene sources={audioSources} volume={audio.volume} />
+	<header class="hero" data-audio-source="hero">
 		<p class="eyebrow draw-step" data-draw-step="eyebrow">{hero.name}<SketchStroke /></p>
 		<h1 class="statement">
 			{#each statementLines as line, index (index)}
@@ -50,7 +70,12 @@
 		</h2>
 		<ul>
 			{#each tiles as work, index (work.id)}
-				<li class="draw-step" data-draw-kind="card" data-draw-step={`work-${index + 1}`}>
+				<li
+					class="draw-step"
+					data-draw-kind="card"
+					data-draw-step={`work-${index + 1}`}
+					data-audio-source={work.id}
+				>
 					<!-- タイルから面 2 の該当作品詳細(/profile#work-{id})へ -->
 					<div data-draw-content>
 						<WorkTile {work} href={resolve('/profile') + '#work-' + work.id} />

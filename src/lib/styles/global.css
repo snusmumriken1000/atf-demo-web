@@ -118,6 +118,7 @@ html[data-motion='animate'] .showcase:not([data-drawing-state]) [data-draw-path]
 		--motion-draw-medium: 0ms;
 		--motion-draw-long: 0ms;
 		--motion-draw-card: 0ms;
+		--motion-sound-pulse: 0ms;
 	}
 
 	[data-drawing-state='active'] .draw-step {

@@ -8,6 +8,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import SoundToggle from '$lib/components/SoundToggle.svelte';
 	import { content } from '$lib/data/content';
 
 	// もう一方の面へのリンク先を route.id から決める
@@ -16,19 +17,34 @@
 			? { href: resolve('/profile'), label: content.site.faces.profile.label }
 			: { href: resolve('/showcase'), label: content.site.faces.showcase.label }
 	);
+
+	// 音は面 1(showcase)だけの体験にする。面 2 は落ち着いて読む面なので出さない
+	const showsSound = $derived(page.route.id === '/showcase');
 </script>
 
-<nav class="face-switcher" aria-label={content.site.navigation.switcherLabel}>
-	<a href={resolve('/')}>← {content.site.navigation.top}</a>
-	<a href={other.href}>{other.label}</a>
-</nav>
+<div class="face-controls">
+	<nav class="face-switcher" aria-label={content.site.navigation.switcherLabel}>
+		<a href={resolve('/')}>← {content.site.navigation.top}</a>
+		<a href={other.href}>{other.label}</a>
+	</nav>
+	{#if showsSound}
+		<SoundToggle />
+	{/if}
+</div>
 
 <style>
-	.face-switcher {
+	.face-controls {
 		position: fixed;
 		top: var(--space-2);
 		right: var(--space-2);
 		z-index: var(--z-nav);
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: var(--space-2);
+	}
+
+	.face-switcher {
 		display: flex;
 		gap: var(--space-2);
 	}

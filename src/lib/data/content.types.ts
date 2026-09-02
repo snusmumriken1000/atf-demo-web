@@ -61,6 +61,29 @@ export type SkillGroup = {
 	items: SkillItem[];
 };
 
+/**
+ * 面 1(showcase)の空間オーディオ設定。
+ *
+ * 音は音声ファイルではなくブラウザ内で合成しているので、ここの数値を変えると
+ * 音そのものが変わる(音源ファイルの差し替えは不要)。
+ */
+export type AudioContent = {
+	/** トグルに出す短いラベル(例: 'Sound') */
+	label: string;
+	/** 音を鳴らす操作の説明(スクリーンリーダー向け) */
+	enableLabel: string;
+	/** 音を止める操作の説明(スクリーンリーダー向け) */
+	disableLabel: string;
+	/** トグルの近くに出す補足。3D 定位はヘッドホンでよく分かる旨を書く */
+	hint: string;
+	/** 全体音量。0(無音)〜 1(最大)。既定は 0.5 */
+	volume: number;
+	/** 音の基準の高さ(Hz)。低いほど落ち着いた音場になる。130.81 = C3 */
+	baseHz: number;
+	/** 作品音が広がる音域(オクターブ数)。大きいほど作品ごとの音程差が開く */
+	octaveRange: number;
+};
+
 /** サイト全体のコンテンツ(表示文言)一式 */
 export type SiteContent = {
 	site: {
@@ -113,4 +136,6 @@ export type SiteContent = {
 	};
 	/** 作品一覧(showcase タイルと profile 詳細で共有) */
 	works: Work[];
+	/** 面 1(showcase)の空間オーディオ */
+	audio: AudioContent;
 };

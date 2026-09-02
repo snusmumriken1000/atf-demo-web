@@ -31,7 +31,16 @@ const minimalContent = (): SiteContent => ({
 		career: [],
 		skills: []
 	},
-	works: [{ id: 'valid-id', title: 'Work', blurb: 'Blurb', hue: 0 }]
+	works: [{ id: 'valid-id', title: 'Work', blurb: 'Blurb', hue: 0 }],
+	audio: {
+		label: 'Sound',
+		enableLabel: 'Enable',
+		disableLabel: 'Disable',
+		hint: 'Headphones',
+		volume: 0.5,
+		baseHz: 130.81,
+		octaveRange: 2
+	}
 });
 
 describe('validateContent', () => {
@@ -67,5 +76,22 @@ describe('validateContent', () => {
 			{ label: 'GitHub', url: 'https://example.com/two' }
 		];
 		expect(() => validateContent(candidate)).toThrow(/profile\.links\.label に重複/);
+	});
+
+	it.each([
+		['audio.volume', (candidate: SiteContent) => (candidate.audio.volume = 1.4)],
+		['audio.baseHz', (candidate: SiteContent) => (candidate.audio.baseHz = 5)],
+		['audio.octaveRange', (candidate: SiteContent) => (candidate.audio.octaveRange = 9)]
+	])('範囲外の %s を拒否する', (path, mutate) => {
+		const candidate = minimalContent();
+		mutate(candidate);
+		expect(() => validateContent(candidate)).toThrow(new RegExp(path.replace('.', '\\.')));
+	});
+
+	it('範囲内の音の設定は許容する', () => {
+		const candidate = minimalContent();
+		candidate.audio.volume = 0;
+		candidate.audio.octaveRange = 0.5;
+		expect(() => validateContent(candidate)).not.toThrow();
 	});
 });

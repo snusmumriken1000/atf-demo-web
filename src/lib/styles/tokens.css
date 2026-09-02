@@ -57,6 +57,8 @@
 	--motion-draw-medium: 750ms;
 	--motion-draw-long: 850ms;
 	--motion-draw-card: 650ms;
+	/* 音の再生中に動くイコライザの 1 周期 */
+	--motion-sound-pulse: 1200ms;
 	--motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 

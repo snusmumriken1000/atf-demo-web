@@ -161,7 +161,21 @@ export const content: SiteContent = {
 			hue: 20,
 			featured: true
 		}
-	]
+	],
+
+	// ---- 面 1(showcase)の空間オーディオ ----
+	// 音は音声ファイルではなくブラウザ内で合成しています。ここの数値を変えると
+	// 鳴る音そのものが変わります(音源ファイルの用意は不要)。
+	// 各作品の音の高さは、その作品の hue(色相)から自動で決まります。
+	audio: {
+		label: 'Sound',
+		enableLabel: '空間オーディオを再生する',
+		disableLabel: '空間オーディオを停止する',
+		hint: 'ヘッドホン推奨',
+		volume: 0.5, // 0(無音)〜 1(最大)
+		baseHz: 130.81, // 音の基準の高さ(C3)。低いほど落ち着いた音場になる
+		octaveRange: 2 // 作品音が広がる音域(オクターブ数)
+	}
 };
 
 validateContent(content);
