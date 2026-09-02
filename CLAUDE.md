@@ -40,18 +40,27 @@ orchestrator → issue-manager → architect → implementer → (test-engineer 
 - 対応する Issue がない作業は、先に issue-manager で Issue を起票する
 - 成果物の報告・コミットメッセージ・実行記録に Issue 番号を含める
 
-### PR フロー
+### main への反映フロー
 
-- デフォルトブランチでは直接作業せず、作業単位ごとにブランチを作成する(例: `feature/issue-123-short-summary`)
-- 作業完了後にコミット・push し、`gh pr create -R snusmumriken1000/atf-demo-web` で PR を作成する
-- PR タイトル・本文に Issue 番号を含める(本文に `Closes #123`)
-- PR 作成後、総括(実装概要・テスト結果・レビュー結果)と PR の URL をユーザーに提示し、**ユーザーの承認を得てからエージェントが `gh pr merge` を実行する**。承認前の無断マージは禁止
-- main への直接 push は引き続き禁止
+- 作業単位ごとにブランチを作成する(例: `feature/issue-123-short-summary`)。分岐元は必ず `origin/main`
+- `npm run verify` が通ってからコミットする。コミットメッセージに Issue 番号と `Closes #123` を含める
+- **PR は必須ではない**。verify 通過後、作業ブランチから main へ直接反映してよい(ユーザー指示 2026-09-03)。
+  反映後に総括(実装概要・テスト結果)をユーザーに提示する
+- PR を作るのは、レビューを挟みたいとき・差分が大きいとき・ユーザーから依頼があったときだけ
+
+**反映コマンド(この形以外を使わない):**
+
+```sh
+git push origin <作業ブランチ>:main
+```
+
+**注意: ローカルの `main` ブランチは使わない。** ローカル `main` は別プロジェクト(React の Todo デモ)の
+履歴で `origin/main` と共通の祖先を持たない。`git checkout main` するとワークツリーが入れ替わり、
+`git merge origin/main` は "unrelated histories" で失敗する。基準は常に `origin/main`。
 
 ### タッチポイント(人間の承認が必要な境界)
 
 - **issue-approval**: エージェントが起票した Issue は、ユーザーが内容を確認・承認してから着手する。承認前に実装を始めない
-- **pr-merge**: PR の総括をユーザーに提示し、承認を得てからエージェントがマージする(承認前のマージは禁止)
 
 ### 観測の入口(実行記録)
 
